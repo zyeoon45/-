@@ -1,39 +1,173 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>땡땡이닷컴 — 수업 중 타자 배틀</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>땡땡이닷컴 — 수업 중 타자 배틀</title>
+<meta property="og:title" content="땡땡이닷컴 — 수업 중 타자 배틀">
+<meta property="og:description" content="수업 중 몰래 즐기는 실시간 타자 경쟁.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Share+Tech+Mono&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0a0a14;--bg2:#0f0a04;--bg3:#1a1005;
+  --border:#2a1510;--border2:#5a3510;
+  --orange:#e8621a;--orange2:#ff7a20;
+  --cyan:#44ffcc;--yellow:#ffcc00;--red:#ff4455;--green:#44ff88;
+  --text:#f0e8d8;--muted:#7a5a30;
+  --pixel:'Press Start 2P',monospace;--mono:'Share Tech Mono',monospace;
+}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:var(--mono);min-height:100vh;overflow-x:hidden}
+.pixel-bg{position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:repeating-linear-gradient(0deg,transparent,transparent 31px,rgba(180,100,20,.05) 32px),
+             repeating-linear-gradient(90deg,transparent,transparent 31px,rgba(180,100,20,.05) 32px)}
+#starCanvas{position:fixed;inset:0;z-index:0;pointer-events:none}
+.moon{position:fixed;top:48px;right:80px;z-index:0;width:64px;height:64px;
+  background:var(--yellow);box-shadow:4px 4px 0 #aa8800;animation:moonFloat 6s ease-in-out infinite}
+@keyframes moonFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+.city-skyline{position:fixed;bottom:0;left:0;right:0;height:130px;z-index:0;display:flex;align-items:flex-end;pointer-events:none}
+.building{background:var(--bg3);border-top:2px solid #2a1508;flex-shrink:0;position:relative;overflow:hidden}
+.building::after{content:'';position:absolute;inset:8px 6px 0;
+  background:repeating-linear-gradient(transparent,transparent 9px,rgba(255,160,80,.08) 9px,rgba(255,160,80,.08) 11px)}
+.building-light{position:absolute;width:4px;height:4px;background:var(--yellow);animation:winBlink 3s step-end infinite}
+@keyframes winBlink{0%,100%{opacity:.8}50%{opacity:.1}}
+.wrapper{position:relative;z-index:1;max-width:860px;margin:0 auto;padding:0 16px 180px}
+.phase{display:none}.phase.active{display:block}
+.header{text-align:center;padding:36px 0 24px}
+.logo{font-family:var(--pixel);font-size:clamp(16px,4vw,24px);color:var(--orange2);
+  text-shadow:4px 4px 0 #8a3800;line-height:1.7;animation:logoPulse 2.5s ease-in-out infinite}
+@keyframes logoPulse{0%,100%{text-shadow:4px 4px 0 #8a3800}50%{text-shadow:4px 4px 0 #c45010,0 0 20px rgba(255,130,20,.25)}}
+.logo-sub{font-family:var(--pixel);font-size:8px;color:var(--orange);margin-top:10px;letter-spacing:2px}
+.live-bar{display:flex;align-items:center;justify-content:center;gap:12px;margin:16px 0 0}
+.live-dot{width:8px;height:8px;background:var(--red);animation:liveBlink 1s step-end infinite}
+@keyframes liveBlink{0%,100%{opacity:1}50%{opacity:0}}
+.live-count{font-family:var(--pixel);font-size:8px;color:var(--red)}
+.live-label{font-size:12px;color:var(--muted)}
+.card{background:rgba(15,8,4,.9);border:2px solid var(--border);padding:20px;margin-bottom:14px}
+.card-title{font-family:var(--pixel);font-size:7px;color:var(--orange);letter-spacing:2px;margin-bottom:14px;text-transform:uppercase}
+.required{color:var(--orange2)}
 
-  <!-- OG 태그 (SNS 공유용) -->
-  <meta property="og:title"       content="땡땡이닷컴 — 수업 중 타자 배틀">
-  <meta property="og:description" content="수업 중 몰래 즐기는 실시간 타자 경쟁. 지금 접속자들과 배틀하세요.">
-  <meta property="og:image"       content="/og-image.png">
-  <meta property="og:url"         content="https://ddangtangi.netlify.app">
-  <meta name="twitter:card"       content="summary_large_image">
+/* 캐릭터 선택 UI */
+.avatar-row { display: flex; gap: 12px; justify-content: center; margin-bottom: 8px; flex-wrap: wrap; }
+.avatar-btn {
+  width: 52px; height: 52px; border: 2px solid var(--border2);
+  background: var(--bg2); border-radius: 6px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.2s; position: relative;
+}
+.avatar-btn img { width: 36px; height: 36px; image-rendering: pixelated; }
+.avatar-btn:hover { border-color: var(--orange); transform: translateY(-2px); }
+.avatar-btn.selected { 
+  border-color: var(--orange2); background: rgba(255,122,32,0.2); 
+  transform: translateY(-4px); box-shadow: 0 4px 0 #8a3800; 
+}
+.avatar-name-display { text-align: center; font-size: 11px; color: var(--cyan); margin-bottom: 20px; font-weight: bold; min-height: 14px;}
 
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Share+Tech+Mono&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css">
+.nickname-row{display:flex;gap:10px;flex-wrap:wrap}
+.px-select,.px-input{background:var(--bg2);border:2px solid var(--border2);color:var(--text);
+  font-family:var(--mono);font-size:13px;padding:10px 12px;outline:none;appearance:none;transition:border-color .15s}
+.px-select{flex:0 0 160px;cursor:pointer}
+.px-input{flex:1;min-width:140px}
+.px-input::placeholder{color:#3a1f08}
+.px-input:focus,.px-select:focus{border-color:var(--orange2)}
+.nickname-preview{margin-top:10px;font-size:12px;color:var(--muted)}
+.preview-tag{color:var(--orange2);font-weight:bold}
+.prompt-preview{font-size:15px;line-height:2;color:#d0c8a0;background:rgba(0,0,0,.3);
+  border:1px solid var(--border);padding:14px 18px;margin-bottom:10px; font-weight: bold; letter-spacing: 0.5px;}
+.prompt-meta{font-size:11px;color:var(--muted)}
+.tab-row{display:flex;border-bottom:2px solid var(--border);margin-bottom:0}
+.tab{font-family:var(--pixel);font-size:7px;padding:10px 14px;cursor:pointer;color:var(--muted);
+  background:transparent;border:none;border-bottom:2px solid transparent;margin-bottom:-2px;letter-spacing:1px}
+.tab.active{color:var(--orange2);border-bottom-color:var(--orange2)}
+.rank-list{display:flex;flex-direction:column;gap:6px}
+.rank-empty{font-size:12px;color:var(--muted);text-align:center;padding:16px 0}
+.rank-item{display:flex;align-items:center;gap:10px;padding:8px 10px;
+  background:rgba(30,15,4,.5);border:1px solid transparent;position:relative;overflow:hidden}
+.rank-item.is-me{border-color:var(--orange2);background:rgba(160,80,10,.22)}
+.rank-item.is-me::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--orange2)}
+.rank-num{font-family:var(--pixel);font-size:8px;width:22px;text-align:right;flex-shrink:0}
+.rank-num.gold{color:var(--yellow)}.rank-num.silver{color:#c0c0c0}.rank-num.bronze{color:#ff8855}.rank-num.other{color:var(--muted)}
+.rank-avatar{width:22px;height:22px;image-rendering:pixelated;flex-shrink:0;}
+.rank-name{font-size:11px;color:#d0c890;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rank-bar-wrap{width:100px;flex-shrink:0;height:5px;background:rgba(60,30,8,.5);overflow:hidden}
+.rank-bar{height:100%;background:linear-gradient(90deg,var(--orange),var(--orange2));transition:width .5s}
+.rank-wpm{font-family:var(--pixel);font-size:7px;color:var(--orange2);width:40px;text-align:right;flex-shrink:0;line-height:1.6}
+.map-loading{font-size:12px;color:var(--muted);padding:12px 0}
+.region-list{display:flex;flex-direction:column;gap:8px;margin-top:10px}
+.region-item{display:flex;align-items:center;gap:10px;font-size:12px}
+.region-name{width:120px;color:var(--text);flex-shrink:0}
+.region-bar-wrap{flex:1;height:8px;background:rgba(60,30,8,.4);overflow:hidden}
+.region-bar{height:100%;background:var(--cyan);transition:width .6s}
+.region-count{width:40px;text-align:right;color:var(--cyan);font-family:var(--pixel);font-size:7px}
+.btn-start{display:block;width:100%;background:#c04a10;border:3px solid var(--orange);color:#fff;
+  font-family:var(--pixel);font-size:11px;padding:18px;cursor:pointer;letter-spacing:2px;
+  text-align:center;transition:transform .1s,background .15s;margin-bottom:14px;position:relative}
+.btn-start:hover{background:var(--orange);transform:translateY(-2px)}
+.btn-start:active{transform:translateY(2px)}
+.battle-header{display:flex;justify-content:space-between;align-items:center;padding:20px 0 14px}
+.battle-title{display:flex;flex-direction:column;gap:6px}
+.my-tag{font-size:11px;color:var(--orange2);display:flex;align-items:center;gap:6px;}
+.my-tag img {width:16px;height:16px;image-rendering:pixelated;}
+.timer-box{font-family:var(--pixel);font-size:20px;color:var(--orange2);background:var(--bg2);
+  border:2px solid var(--border2);padding:8px 14px;min-width:90px;text-align:center}
+.timer-box.danger{color:var(--red);animation:timerShake .3s ease-in-out infinite}
+@keyframes timerShake{0%,100%{transform:translateX(0)}25%{transform:translateX(-2px)}75%{transform:translateX(2px)}}
+.progress-container{position:relative; margin-top:24px; margin-bottom:24px;}
+.progress-outer{height:8px;background:rgba(60,30,8,.4);position:relative;overflow:visible;}
+.progress-inner{height:100%;background:linear-gradient(90deg,var(--orange),var(--orange2));width:0%;transition:width .2s}
+.progress-runner{position:absolute;top:-22px;left:0%;width:32px;height:32px;transition:left 0.2s;transform:translateX(-50%);z-index:5;image-rendering:pixelated;}
+.progress-label{position:absolute;right:6px;top:50%;transform:translateY(-50%);font-size:9px;color:rgba(255,255,255,.5)}
+
+.prompt-text{font-size:18px; line-height:2.0; margin-bottom:16px; min-height:64px; word-break:keep-all; letter-spacing: 0.5px;}
+.ch{display:inline}
+.ch.correct{color:var(--green); text-shadow: 0 0 4px rgba(68,255,136,0.3);}
+.ch.wrong{color:var(--red); background:rgba(255,50,50,.25); text-decoration: underline;}
+.ch.cursor{color:#fff;background:var(--orange);animation:cur .65s step-end infinite}
+.ch.pending{color:#a49b87;} 
+@keyframes cur{0%,100%{background:var(--orange)}50%{background:var(--orange2)}}
+
+.type-input{width:100%;margin-bottom:14px;caret-color:var(--orange2);font-size:15px;cursor:text;user-select:text; letter-spacing: 0.5px;}
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.stat-box{background:rgba(30,15,4,.8);border:1px solid var(--border);padding:10px 6px;text-align:center}
+.stat-val{display:block;font-family:var(--pixel);font-size:16px;color:var(--orange2);margin-bottom:4px}
+.stat-label{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px}
+.result-banner{font-family:var(--pixel);font-size:clamp(10px,2.5vw,14px);color:var(--yellow);
+  border:2px solid var(--yellow);background:rgba(80,60,0,.3);padding:18px;text-align:center;margin:20px 0 14px;line-height:1.9}
+.result-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
+.result-box{background:rgba(30,15,4,.8);border:2px solid var(--border2);padding:24px;text-align:center}
+.result-big-val{display:block;font-family:var(--pixel);font-size:28px;color:var(--orange2);margin-bottom:8px}
+.share-card{background:var(--bg2);border:2px solid var(--orange);padding:20px;margin-bottom:14px;text-align:center}
+.share-btn-row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.share-btn{font-family:var(--pixel);font-size:8px;padding:10px 16px;border:2px solid;
+  cursor:pointer;background:transparent;letter-spacing:1px;transition:opacity .15s}
+.share-btn:hover{opacity:.75}
+.share-btn.twitter{color:#1da1f2;border-color:#1da1f2}
+.share-btn.copy{color:var(--cyan);border-color:var(--cyan)}
+.share-btn.img{color:var(--yellow);border-color:var(--yellow)}
+#toast{position:fixed;bottom:40px;left:50%;transform:translateX(-50%);
+  background:var(--bg3);border:2px solid var(--orange);color:var(--orange2);
+  font-family:var(--pixel);font-size:9px;padding:12px 20px;z-index:999;
+  opacity:0;pointer-events:none;transition:opacity .3s}
+#toast.show{opacity:1}
+@media(max-width:520px){.stats-row{grid-template-columns:repeat(2,1fr)}.rank-bar-wrap{display:none}.moon{display:none}}
+</style>
 </head>
 <body>
-
-<!-- 배경 레이어 -->
 <div class="pixel-bg"></div>
 <canvas id="starCanvas"></canvas>
 <div class="moon"></div>
 <div class="city-skyline" id="skyline"></div>
-
-<!-- 토스트 알림 -->
 <div id="toast"></div>
 
 <div class="wrapper">
 
-  <!-- ══════════════ PHASE: LOBBY ══════════════ -->
+  <!-- LOBBY -->
   <div class="phase active" id="phaseLobby">
-
     <header class="header">
-      <div class="logo">🎮 땡땡이닷컴</div>
+      <div class="logo">🏫 땡땡이닷컴</div>
       <div class="logo-sub">CLASS ESCAPE TYPING BATTLE</div>
       <div class="live-bar">
         <div class="live-dot"></div>
@@ -42,58 +176,42 @@
       </div>
     </header>
 
-    <!-- 닉네임 설정 -->
     <div class="card">
-      <div class="card-title">▶ 닉네임 설정 <span class="required">(필수)</span></div>
+      <div class="card-title">▶ 아바타 & 닉네임 설정 <span class="required">(필수)</span></div>
+      
+      <!-- 아바타 선택 -->
+      <div class="avatar-row" id="avatarContainer"></div>
+      <div class="avatar-name-display" id="avatarNameDisplay">컴공오리</div>
+
       <div class="nickname-row">
         <select class="px-select" id="classSelect">
           <option value="">수업 선택</option>
-          <option>경영학원론</option>
-          <option>미시경제학</option>
-          <option>운영체제론</option>
-          <option>마케팅관리</option>
-          <option>알고리즘</option>
-          <option>심리학개론</option>
-          <option>철학의이해</option>
-          <option>선형대수학</option>
-          <option>회계원리</option>
-          <option>통계학</option>
-          <option>영어회화</option>
-          <option>기타수업</option>
+          <option>경영학원론</option><option>미시경제학</option><option>운영체제론</option>
+          <option>마케팅관리</option><option>알고리즘</option><option>심리학개론</option>
+          <option>철학의이해</option><option>선형대수학</option><option>회계원리</option>
+          <option>통계학</option><option>영어회화</option><option>기타수업</option>
         </select>
         <input class="px-input" id="nicknameInput" type="text" maxlength="10" placeholder="닉네임 (최대 10자)">
       </div>
-      <div class="nickname-preview">
-        → 배틀 태그: <span id="previewTag" class="preview-tag">[수업선택] 땡땡이</span>
-      </div>
+      <div class="nickname-preview">→ 배틀 태그: <span id="previewTag" class="preview-tag">[수업선택] 땡땡이</span></div>
     </div>
 
-    <!-- 오늘의 지문 미리보기 -->
     <div class="card">
       <div class="card-title">▶ 오늘의 지문 미리보기</div>
       <div class="prompt-preview" id="promptPreview">로딩 중...</div>
-      <div class="prompt-meta">
-        <span id="promptIndex">-</span>번째 지문 &nbsp;|&nbsp; 매 배틀마다 랜덤 변경
-      </div>
+      <div class="prompt-meta"><span id="promptIndex">-</span>번째 지문 &nbsp;|&nbsp; 매 배틀마다 랜덤 변경</div>
     </div>
 
-    <!-- 탭 -->
     <div class="tab-row">
-      <button class="tab active" onclick="switchLobbyTab(0)" id="tabBtn0">실시간 순위</button>
-      <button class="tab"        onclick="switchLobbyTab(1)" id="tabBtn1">🗺 땡땡이 지도</button>
+      <button class="tab active" onclick="switchLobbyTab(0)">실시간 순위</button>
+      <button class="tab" onclick="switchLobbyTab(1)">🗺 땡땡이 지도</button>
     </div>
-
-    <!-- 탭0: 랭킹 -->
     <div id="lobbyTab0">
       <div class="card">
         <div class="card-title">▶ 오늘의 랭킹</div>
-        <div class="rank-list" id="lobbyRankList">
-          <div class="rank-empty">아직 오늘 기록이 없어요. 첫 번째 배틀러가 되세요!</div>
-        </div>
+        <div class="rank-list" id="lobbyRankList"><div class="rank-empty">첫 번째 배틀러가 되세요!</div></div>
       </div>
     </div>
-
-    <!-- 탭1: 지도 -->
     <div id="lobbyTab1" style="display:none">
       <div class="card">
         <div class="card-title">▶ 지금 땡땡이 중인 지역</div>
@@ -103,40 +221,30 @@
     </div>
 
     <button class="btn-start" onclick="startBattle()">▶ PRESS START — 배틀 입장</button>
+  </div>
 
-  </div><!-- /phaseLobby -->
-
-
-  <!-- ══════════════ PHASE: BATTLE ══════════════ -->
+  <!-- BATTLE -->
   <div class="phase" id="phaseBattle">
-
     <div class="battle-header">
       <div class="battle-title">
         <div class="card-title" style="margin:0">⚔ 타자 배틀 중</div>
-        <div class="my-tag" id="battleMyTag"></div>
+        <div class="my-tag" id="battleMyTag"><img id="battleMyAvatar" src=""> <span id="battleMyName"></span></div>
       </div>
-      <div class="timer-box" id="timerDisplay">01:30</div>
+      <div class="timer-box" id="timerDisplay">01:00</div>
     </div>
-
-    <div class="card" id="arenaCard">
-      <div class="progress-outer">
-        <div class="progress-inner" id="progressBar"></div>
-        <div class="progress-label" id="progressLabel">0%</div>
+    <div class="card">
+      <!-- 트랙 & 달리기 아바타 -->
+      <div class="progress-container">
+        <div class="progress-outer">
+          <div class="progress-inner" id="progressBar"></div>
+          <img class="progress-runner" id="progressRunner" src="">
+          <div class="progress-label" id="progressLabel">0%</div>
+        </div>
       </div>
-
       <div class="prompt-text" id="promptDisplay"></div>
-
-      <input
-        class="px-input type-input"
-        id="typeInput"
-        type="text"
-        placeholder="여기에 타이핑하세요..."
-        autocomplete="off"
-        autocorrect="off"
-        autocapitalize="off"
-        spellcheck="false"
-      >
-
+      <input class="px-input type-input" id="typeInput" type="text" placeholder="클릭하면 타이핑 시작! 👆"
+        autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
+        onclick="attachTypingIfNeeded(this)">
       <div class="stats-row">
         <div class="stat-box"><span class="stat-val" id="statWpm">0</span><span class="stat-label">WPM</span></div>
         <div class="stat-box"><span class="stat-val" id="statAcc">100</span><span class="stat-label">정확도%</span></div>
@@ -144,75 +252,449 @@
         <div class="stat-box"><span class="stat-val" id="statCombo">0</span><span class="stat-label">콤보🔥</span></div>
       </div>
     </div>
-
     <div class="card">
       <div class="card-title">▶ 실시간 순위판</div>
-      <div class="rank-list" id="battleRankList">
-        <div class="rank-empty">상대방 연결 대기 중...</div>
-      </div>
+      <div class="rank-list" id="battleRankList"><div class="rank-empty">상대방 연결 대기 중...</div></div>
     </div>
+  </div>
 
-  </div><!-- /phaseBattle -->
-
-
-  <!-- ══════════════ PHASE: RESULT ══════════════ -->
+  <!-- RESULT -->
   <div class="phase" id="phaseResult">
-
     <div class="result-banner" id="resultBanner">🎉 배틀 종료!</div>
-
     <div class="result-grid">
-      <div class="result-box">
-        <span class="result-big-val" id="resWpm">0</span>
-        <span class="stat-label">WPM</span>
-      </div>
-      <div class="result-box">
-        <span class="result-big-val" id="resAcc">0%</span>
-        <span class="stat-label">정확도</span>
-      </div>
-      <div class="result-box">
-        <span class="result-big-val" id="resCombo">0</span>
-        <span class="stat-label">최대 콤보</span>
-      </div>
-      <div class="result-box">
-        <span class="result-big-val" id="resPrompt">-</span>
-        <span class="stat-label">지문</span>
-      </div>
+      <div class="result-box"><span class="result-big-val" id="resWpm">0</span><span class="stat-label">WPM</span></div>
+      <div class="result-box"><span class="result-big-val" id="resAcc">0%</span><span class="stat-label">정확도</span></div>
+      <div class="result-box"><span class="result-big-val" id="resCombo">0</span><span class="stat-label">최대 콤보</span></div>
+      <div class="result-box"><span class="result-big-val" id="resPrompt">-</span><span class="stat-label">지문</span></div>
     </div>
-
-    <!-- SNS 공유 카드 -->
     <div class="share-card">
       <div class="card-title" style="margin-bottom:12px">▶ 결과 공유하기</div>
-      <canvas id="shareCanvas" style="max-width:100%;border:1px solid #2a1860;margin-bottom:14px;display:block"></canvas>
+      <canvas id="shareCanvas" style="max-width:100%;border:1px solid var(--border);margin-bottom:14px;display:block;margin-left:auto;margin-right:auto"></canvas>
       <div class="share-btn-row">
         <button class="share-btn twitter" onclick="shareTwitter()">🐦 트위터 공유</button>
-        <button class="share-btn copy"    onclick="copyShareLink()">🔗 링크 복사</button>
-        <button class="share-btn img"     onclick="downloadShareImage()">💾 이미지 저장</button>
+        <button class="share-btn copy" onclick="copyShareLink()">🔗 링크 복사</button>
+        <button class="share-btn img" onclick="downloadShareImage()">💾 이미지 저장</button>
       </div>
     </div>
-
-    <!-- 오늘 최종 랭킹 -->
     <div class="card">
       <div class="card-title">▶ 오늘 최종 순위</div>
-      <div class="rank-list" id="resultRankList">
-        <div class="rank-empty">랭킹 불러오는 중...</div>
-      </div>
+      <div class="rank-list" id="resultRankList"><div class="rank-empty">랭킹 불러오는 중...</div></div>
     </div>
-
     <button class="btn-start" onclick="backToLobby()">↩ 다시 도전하기</button>
-
-  </div><!-- /phaseResult -->
+  </div>
 
 </div><!-- /wrapper -->
 
-<!-- Firebase SDK (compat 버전 — CDN) -->
+<!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script>
+const firebaseConfig = {
+  apiKey:            "YOUR_API_KEY",
+  authDomain:        "YOUR_PROJECT_ID.firebaseapp.com",
+  databaseURL:       "https://YOUR_PROJECT_ID-default-rtdb.firebaseio.com",
+  projectId:         "YOUR_PROJECT_ID",
+  storageBucket:     "YOUR_PROJECT_ID.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId:             "YOUR_APP_ID",
+};
+</script>
+<script>
 
-<!-- TODO: 아래 파일에 Firebase config 채우기 -->
-<script src="firebase-config.js"></script>
+// ── 픽셀 아트 아바타 생성기 (SVG Base64) ───────────────
+const AVATAR_NAMES = ["컴공오리", "지박령", "과탑안경", "학교냥이", "복학생"];
+const AVATAR_PALS = {
+  'K': '#0a0a14', 'W': '#FFFFFF', 'O': '#FFA500', 'R': '#FF4455',
+  'S': '#FFDAB9', 'H': '#3a2010', 'G': '#44FF88', 'B': '#44FFCC', 'P': '#FFCC00'
+};
+const AVATAR_DATA = [
+  // 0: 컴공오리 (Duck)
+  ["            ","    KKKK    ","   KWKWWK   ","   KOOWWK   ","   KOKKK    ","  KKWWWWK   "," KWWWWWWWK  "," KWWWWWWWK  ","  KWWWWWK   ","   KOKOK    ","            ","            "],
+  // 1: 지박령 (Ghost)
+  ["            ","   KKKKKK   ","  KWWWWWWK  "," KWWKWWKWWK "," KWWWWWWWWK "," KWWKWWKWWK "," KWWRRRRWWK "," KWWWWWWWWK "," KWWKWWKWWK ","  KK KK KK  ","            ","            "],
+  // 2: 과탑안경 (Nerd)
+  ["            ","   HHHHHH   ","  HSSSSSSH  ","  KSWKKSWK  ","  KKWKKKWK  ","  SSSSSSSS  ","   SSSSSS   ","  KKKKKKKK  ","  KWWWWWWK  ","   KK  KK   ","            ","            "],
+  // 3: 학교냥이 (Cat)
+  ["            ","  K K  K K  ","  KGGKKGGK  "," KGGGGGGGGK "," KGKGWWGKGK "," KGGKKKKGGK "," KGGGGGGGGK ","  KGGGGGGK  ","   KKKKKK   ","            ","            ","            "],
+  // 4: 복학생 (Hoodie)
+  ["            ","  PPPPPPPP  "," KPPPPPPPPK ","  HSSSSSSH  ","  KKSKKSKS  ","  SSSSSSSS  ","   SSSSSS   ","  KBKBBKBK  ","  KBBBBBBK  ","   KK  KK   ","            ","            "]
+];
 
-<!-- 게임 로직 -->
-<script src="app.js"></script>
+const AVATAR_SVGS = AVATAR_DATA.map(data => {
+  let svg = `<svg viewBox="0 0 12 12" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges">`;
+  for(let y=0; y<12; y++){
+    for(let x=0; x<12; x++){
+      let c = data[y][x];
+      if(c && c !== ' ') svg += `<rect x="${x}" y="${y}" width="1" height="1" fill="${AVATAR_PALS[c]}"/>`;
+    }
+  }
+  svg += `</svg>`;
+  return "data:image/svg+xml;base64," + btoa(svg);
+});
 
+// ── 지문 (스피디한 학교 테마) ────────────────────────
+const PROMPTS = [
+  "솔직히 이 내용은 시험에 안 나올 것 같다. 마음을 비우고 타자 연습이나 열심히 해야겠다. 교수님 죄송합니다.",
+  "교수님의 시선을 피해 모니터만 뚫어져라 쳐다본다. 엄청난 학구열에 불타는 줄 아시겠지만 사실 딴짓 중이다.",
+  "강의실 에어컨이 너무 빵빵해서 손가락이 굳어간다. 추위와 졸음이 동시에 밀려오는 기적의 공간이다.",
+  "방금 교수님이 시험에 나온다고 강조하셨다. 하지만 타자 배틀에 집중하느라 제대로 못 들었다. 내 학점 안녕.",
+  "앞자리 친구의 노트북 화면에 화려한 게임이 켜져 있다. 나도 모르게 시선이 간다. 이러다 둘 다 학고 받겠다.",
+  "타건감이 좋은 키보드를 가져올 걸 그랬다. 멤브레인 키보드로는 내 화려한 타자 실력을 100% 발휘하기 어렵다.",
+  "오늘 점심은 학식 말고 맛있는 걸 먹어야겠다. 타자를 치며 메뉴를 고민하는 이 순간이 수업 중 가장 짜릿하다.",
+  "출석체크가 끝나는 순간 강의실의 공기가 달라진다. 다들 각자의 세계로 빠져드는 시간. 나도 타자의 세계로 간다.",
+  "이 학점은 쿨하게 포기해도 내 타자 속도만큼은 포기할 수 없다. 땡땡이닷컴 1등은 무조건 내 차지다.",
+  "모니터 뒤에 숨어서 미친 듯이 키보드를 두드린다. 타자 소리만 들으면 내가 이 수업 수석일 것이다."
+];
+
+// ── 상태 ─────────────────────────────────────────
+var db=null,mySessionId=null,myRoomRef=null,battleRoomId=null,rankListener=null;
+var myTag="[수업선택] 땡땡이",myName="땡땡이", myAvatarIdx = 0;
+var currentPrompt="",currentPromptIdx=0;
+var charIndex=0,errors=0,totalTyped=0,myWpm=0,myAcc=100,myCombo=0;
+var timerSec=60,timerInterval=null,battleStartTime=null;
+
+// ── 초기화 ────────────────────────────────────────
+function initAvatars() {
+  const container = document.getElementById("avatarContainer");
+  AVATAR_SVGS.forEach((svg, idx) => {
+    let btn = document.createElement("div");
+    btn.className = "avatar-btn" + (idx === 0 ? " selected" : "");
+    btn.innerHTML = `<img src="${svg}" alt="${AVATAR_NAMES[idx]}">`;
+    btn.onclick = () => selectAvatar(idx);
+    container.appendChild(btn);
+  });
+}
+
+function selectAvatar(idx) {
+  myAvatarIdx = idx;
+  document.querySelectorAll(".avatar-btn").forEach((b, i) => b.classList.toggle("selected", i === idx));
+  document.getElementById("avatarNameDisplay").textContent = AVATAR_NAMES[idx];
+}
+
+// ── Firebase ──────────────────────────────────────
+function initFirebase(){
+  try{
+    if(!firebaseConfig||firebaseConfig.apiKey==="YOUR_API_KEY") throw new Error("no config");
+    firebase.initializeApp(firebaseConfig);
+    db=firebase.database();
+    mySessionId="u_"+Math.random().toString(36).slice(2,9)+"_"+Date.now();
+    var p=db.ref("presence/"+mySessionId);
+    p.set({at:Date.now()}); p.onDisconnect().remove();
+    db.ref("presence").on("value",function(s){setLiveCount(s.numChildren());});
+  }catch(e){
+    console.warn("오프라인 모드:",e.message);
+    db=null; fakeCount();
+  }
+}
+function setLiveCount(n){var e=document.getElementById("liveCountText");if(e)e.textContent="현재 "+Number(n).toLocaleString()+"명 땡땡이 중";}
+function fakeCount(){var b=2700+Math.floor(Math.random()*400);setLiveCount(b);setInterval(function(){b=Math.max(2400,Math.min(3600,b+Math.floor(Math.random()*20)-9));setLiveCount(b);},4000);}
+
+// ── 지문 ─────────────────────────────────────────
+function pickPrompt(){
+  currentPromptIdx=Math.floor(Math.random()*PROMPTS.length);
+  currentPrompt=PROMPTS[currentPromptIdx];
+  var p=document.getElementById("promptPreview");
+  var i=document.getElementById("promptIndex");
+  if(p)p.textContent=currentPrompt;
+  if(i)i.textContent=currentPromptIdx+1;
+}
+function buildPromptDisplay(){
+  var el=document.getElementById("promptDisplay");
+  if(!el)return;
+  el.innerHTML="";
+  Array.from(currentPrompt).forEach(function(c,i){
+    var s=document.createElement("span");
+    s.className="ch "+(i===0?"cursor":"pending");
+    s.id="ch"+i;
+    s.textContent=c===" "?"\u00a0":c;
+    el.appendChild(s);
+  });
+}
+
+// ── 닉네임 ───────────────────────────────────────
+function updatePreview(){
+  var cls=document.getElementById("classSelect").value||"수업선택";
+  var nick=(document.getElementById("nicknameInput").value||"").trim()||"땡땡이";
+  myTag="["+cls+"] "+nick; myName=nick;
+  var e=document.getElementById("previewTag"); if(e)e.textContent=myTag;
+}
+
+function switchLobbyTab(idx){
+  document.querySelectorAll(".tab").forEach(function(t,i){t.classList.toggle("active",i===idx);});
+  document.getElementById("lobbyTab0").style.display=idx===0?"":"none";
+  document.getElementById("lobbyTab1").style.display=idx===1?"":"none";
+  if(idx===1)loadRegionMap();
+}
+
+async function loadRegionMap(){
+  var loading=document.getElementById("mapLoading");
+  var list=document.getElementById("regionList");
+  if(loading)loading.style.display=""; if(list)list.innerHTML="";
+  var regions={};
+  if(db){
+    try{
+      var s=await db.ref("regions").once("value"); regions=s.val()||{};
+      var r=await fetch("https://ipapi.co/json/"); var g=await r.json();
+      var k=((g.city||"알수없음")+"_"+(g.region||"")).replace(/[.#$\/\[\]\s]/g,"_");
+      await db.ref("regions/"+k).transaction(function(v){return(v||0)+1;});
+      s=await db.ref("regions").once("value"); regions=s.val()||{};
+    }catch(e){}
+  }else{
+    regions={"서울_관악구":138,"서울_강남구":92,"부산_금정구":61,"대전_유성구":49,"인천_연수구":41,"대구_북구":35,"광주_북구":28,"수원_팔달구":22};
+  }
+  if(loading)loading.style.display="none";
+  var sorted=Object.entries(regions).sort(function(a,b){return b[1]-a[1];});
+  var max=sorted[0]?sorted[0][1]:1;
+  sorted.slice(0,10).forEach(function(entry,i){
+    var name=entry[0].replace(/_/g," "),cnt=entry[1],medal=["🥇","🥈","🥉"][i]||"  ";
+    var pct=Math.round((cnt/max)*100),div=document.createElement("div");
+    div.className="region-item";
+    div.innerHTML='<span style="width:20px">'+medal+'</span><span class="region-name">'+name+'</span><div class="region-bar-wrap"><div class="region-bar" style="width:'+pct+'%"></div></div><span class="region-count">'+cnt+'명</span>';
+    if(list)list.appendChild(div);
+  });
+}
+
+async function loadLobbyRank(){
+  var list=document.getElementById("lobbyRankList"); if(!list)return;
+  if(!db){list.innerHTML='<div class="rank-empty">Firebase 연결 후 실시간 랭킹이 표시됩니다.</div>';return;}
+  var snap=await db.ref("daily/"+todayKey()).orderByChild("wpm").limitToLast(10).once("value");
+  var rows=[]; snap.forEach(function(c){rows.unshift(c.val());});
+  if(!rows.length){list.innerHTML='<div class="rank-empty">오늘 기록이 없어요. 첫 배틀러가 되세요!</div>';return;}
+  renderRankItems(list,rows.map(function(r){return{name:r.tag||"익명",wpm:r.wpm,avatar:r.avatar||0,isMe:false};}));
+}
+
+// ── 배틀 시작 ────────────────────────────────────
+function startBattle(){
+  var nick=(document.getElementById("nicknameInput").value||"").trim();
+  var cls=document.getElementById("classSelect").value;
+  if(!nick||!cls){showToast("닉네임과 수업을 선택하세요!");return;}
+
+  charIndex=0;errors=0;totalTyped=0;myWpm=0;myAcc=100;myCombo=0;
+  timerSec=60; battleStartTime=null;
+
+  pickPrompt();
+  buildPromptDisplay();
+
+  document.getElementById("battleMyAvatar").src = AVATAR_SVGS[myAvatarIdx];
+  document.getElementById("battleMyName").textContent = myTag;
+  document.getElementById("progressRunner").src = AVATAR_SVGS[myAvatarIdx];
+  
+  document.getElementById("statWpm").textContent="0";
+  document.getElementById("statAcc").textContent="100";
+  document.getElementById("statRank").textContent="-";
+  document.getElementById("statCombo").textContent="0";
+  document.getElementById("progressBar").style.width="0%";
+  document.getElementById("progressRunner").style.left="0%";
+  document.getElementById("progressLabel").textContent="0%";
+  document.getElementById("timerDisplay").textContent="01:00";
+  document.getElementById("timerDisplay").classList.remove("danger");
+  document.getElementById("battleRankList").innerHTML='<div class="rank-empty">상대방 연결 대기 중...</div>';
+
+  document.getElementById("phaseLobby").classList.remove("active");
+  document.getElementById("phaseBattle").classList.add("active");
+  document.getElementById("phaseResult").classList.remove("active");
+
+  if(timerInterval)clearInterval(timerInterval);
+  timerInterval=setInterval(tickTimer,1000);
+  joinBattleRoom();
+
+  var inp=document.getElementById("typeInput");
+  attachTypingIfNeeded(inp);
+  inp.value="";
+  inp.focus();
+}
+
+// ── 타이핑 핸들러 ────────────────────────────────
+function attachTypingIfNeeded(inp){
+  if(!inp)return;
+  if(inp.dataset.attached==="1")return;
+  inp.dataset.attached="1";
+  inp.addEventListener("input", handleInput);
+}
+
+function handleInput(e){
+  var val = e.target.value;
+  if(!battleStartTime && val.length > 0) battleStartTime = Date.now();
+  if(val.length > currentPrompt.length) {
+    val = val.substring(0, currentPrompt.length);
+    e.target.value = val;
+  }
+
+  charIndex = val.length; 
+  errors = 0; myCombo = 0;
+
+  for(var i = 0; i < currentPrompt.length; i++) {
+    var el = document.getElementById("ch" + i);
+    if(!el) continue;
+    if(i < val.length) {
+      if(val[i] === currentPrompt[i]) { el.className = "ch correct"; myCombo++; } 
+      else { el.className = "ch wrong"; errors++; myCombo = 0; }
+    } else if (i === val.length) { el.className = "ch cursor"; } 
+    else { el.className = "ch pending"; }
+  }
+
+  var elapsed = (Date.now() - battleStartTime) / 60000;
+  myWpm = elapsed > 0 ? Math.round((charIndex / 5) / elapsed) : 0;
+  myAcc = charIndex > 0 ? Math.round(((charIndex - errors) / charIndex) * 100) : 100;
+  
+  document.getElementById("statWpm").textContent = myWpm;
+  document.getElementById("statAcc").textContent = myAcc;
+  document.getElementById("statCombo").textContent = myCombo;
+  
+  var pct = Math.round((charIndex / currentPrompt.length) * 100);
+  document.getElementById("progressBar").style.width = pct + "%";
+  document.getElementById("progressRunner").style.left = pct + "%"; // 캐릭터가 트랙을 달림!
+  document.getElementById("progressLabel").textContent = pct + "%";
+  
+  if(charIndex % 5 === 0 && charIndex > 0) updateMyRoomData();
+  
+  if(charIndex >= currentPrompt.length) {
+    setTimeout(function() {
+      if(document.getElementById("typeInput").value.length >= currentPrompt.length) endBattle();
+    }, 50);
+  }
+}
+
+function tickTimer(){
+  timerSec--;
+  var m=String(Math.floor(timerSec/60)).padStart(2,"0"),s=String(timerSec%60).padStart(2,"0");
+  document.getElementById("timerDisplay").textContent=m+":"+s;
+  if(timerSec<=10)document.getElementById("timerDisplay").classList.add("danger");
+  if(timerSec<=0)endBattle();
+}
+
+function joinBattleRoom(){
+  if(!db)return;
+  battleRoomId="room_"+Math.floor(Date.now()/30000);
+  myRoomRef=db.ref("rooms/"+battleRoomId+"/players/"+mySessionId);
+  myRoomRef.set({tag:myTag,wpm:0,acc:100,progress:0,avatar:myAvatarIdx,at:Date.now()});
+  myRoomRef.onDisconnect().remove();
+  if(rankListener)db.ref("rooms/"+battleRoomId+"/players").off("value",rankListener);
+  rankListener=db.ref("rooms/"+battleRoomId+"/players").on("value",function(snap){
+    var players=[]; snap.forEach(function(c){players.push(Object.assign({id:c.key},c.val()));});
+    renderBattleRank(players);
+  });
+}
+function updateMyRoomData(){if(!myRoomRef)return;myRoomRef.update({wpm:myWpm,acc:myAcc,progress:Math.round((charIndex/currentPrompt.length)*100)});}
+
+// ── 배틀 종료 ────────────────────────────────────
+async function endBattle(){
+  clearInterval(timerInterval); timerInterval=null;
+  updateMyRoomData();
+  if(db){
+    await db.ref("daily/"+todayKey()).push({tag:myTag,wpm:myWpm,acc:myAcc,promptIdx:currentPromptIdx,avatar:myAvatarIdx,at:Date.now()});
+    if(myRoomRef)myRoomRef.remove();
+  }
+  await buildResultScreen();
+  document.getElementById("phaseLobby").classList.remove("active");
+  document.getElementById("phaseBattle").classList.remove("active");
+  document.getElementById("phaseResult").classList.add("active");
+}
+
+async function buildResultScreen(){
+  document.getElementById("resWpm").textContent=myWpm;
+  document.getElementById("resAcc").textContent=myAcc+"%";
+  document.getElementById("resCombo").textContent=myCombo;
+  document.getElementById("resPrompt").textContent="지문 "+(currentPromptIdx+1)+"번";
+  var myRank=1,total=1,resultList=document.getElementById("resultRankList");
+  if(db){
+    var snap=await db.ref("daily/"+todayKey()).orderByChild("wpm").once("value");
+    var rows=[]; snap.forEach(function(c){rows.push(c.val());}); rows.sort(function(a,b){return b.wpm-a.wpm;});
+    total=rows.length; myRank=rows.findIndex(function(r){return r.tag===myTag&&r.wpm===myWpm;})+1||1;
+    renderRankItems(resultList,rows.slice(0,8).map(function(r){return{name:r.tag,wpm:r.wpm,avatar:r.avatar||0,isMe:r.tag===myTag&&r.wpm===myWpm};}));
+  }else{if(resultList)resultList.innerHTML='<div class="rank-empty">Firebase 연결 후 랭킹이 저장됩니다.</div>';}
+  var msgs={1:"🏆 1등! 수업 중 최강 타자 등극!",2:"🥈 2등! 조금만 더 빨랐으면...",3:"🥉 3등! 교수님보단 빠르다"};
+  document.getElementById("resultBanner").textContent=msgs[myRank]||(myRank+"등 / 오늘 "+total+"명 중 — 다음엔 꼭 1등!");
+  drawShareCard(myWpm,myAcc,myRank,total);
+}
+
+function drawShareCard(wpm,acc,rank,total){
+  var canvas=document.getElementById("shareCanvas"); if(!canvas)return;
+  var ctx=canvas.getContext("2d"); canvas.width=600;canvas.height=300;
+  ctx.fillStyle="#0a0a0a";ctx.fillRect(0,0,600,300);
+  ctx.strokeStyle="#e8621a";ctx.lineWidth=3;ctx.strokeRect(3,3,594,294);
+  
+  // 공유 카드에 아바타 그리기
+  let avaImg = new Image();
+  avaImg.onload = function() {
+    ctx.drawImage(avaImg, 510, 24, 60, 60); 
+  };
+  avaImg.src = AVATAR_SVGS[myAvatarIdx];
+
+  ctx.fillStyle="#ff7a20";ctx.font="bold 16px monospace";ctx.fillText("땡땡이닷컴 — CLASS ESCAPE TYPING BATTLE",24,44);
+  ctx.fillStyle="#ff7a20";ctx.font="bold 52px monospace";ctx.fillText(wpm,24,148);
+  ctx.fillStyle="#7a5a30";ctx.font="13px monospace";ctx.fillText("WPM",24,170);
+  ctx.fillStyle="#44ffcc";ctx.font="bold 28px monospace";ctx.fillText(acc+"%",180,140);
+  ctx.fillStyle="#7a5a30";ctx.font="13px monospace";ctx.fillText("정확도",180,162);
+  ctx.fillStyle="#ffcc00";ctx.font="bold 28px monospace";ctx.fillText(rank+"위",320,140);
+  ctx.fillStyle="#7a5a30";ctx.font="13px monospace";ctx.fillText("오늘 "+total+"명 중",320,162);
+  ctx.fillStyle="#1a1004";ctx.fillRect(0,240,600,60);
+  ctx.fillStyle="#f0e8d8";ctx.font="12px monospace";ctx.fillText("수업 중 몰래 즐기는 실시간 타자 배틀",24,264);
+  ctx.fillStyle="#e8621a";ctx.fillText("ddangtangi.netlify.app",24,286);
+}
+
+function shareTwitter(){var w=document.getElementById("resWpm").textContent;window.open("https://twitter.com/intent/tweet?text="+encodeURIComponent("수업 중에 "+w+" WPM 찍었다💀\n땡땡이닷컴 👉 ddangtangi.netlify.app\n#땡땡이닷컴"),"_blank");}
+function copyShareLink(){navigator.clipboard.writeText("ddangtangi.netlify.app").then(function(){showToast("링크 복사 완료! 🎮");});}
+function downloadShareImage(){var c=document.getElementById("shareCanvas"),a=document.createElement("a");a.download="ddangtangi_result.png";a.href=c.toDataURL();a.click();}
+
+// ── 랭킹 렌더 ─────────────────────────────────────
+function renderBattleRank(players){
+  var sorted=players.slice().sort(function(a,b){return(b.wpm||0)-(a.wpm||0);});
+  var myIdx=sorted.findIndex(function(p){return p.id===mySessionId;});
+  document.getElementById("statRank").textContent=myIdx>=0?(myIdx+1)+"위":"-";
+  renderRankItems(document.getElementById("battleRankList"),sorted.map(function(p){return{name:p.tag||"익명",wpm:p.wpm||0,avatar:p.avatar||0,isMe:p.id===mySessionId};}));
+}
+function renderRankItems(container,items){
+  if(!container)return;
+  var max=Math.max.apply(null,items.map(function(i){return i.wpm;}).concat([1]));
+  container.innerHTML="";
+  items.forEach(function(item,i){
+    var cls=["gold","silver","bronze"][i]||"other",pct=Math.round((item.wpm/max)*100);
+    var div=document.createElement("div"); div.className="rank-item"+(item.isMe?" is-me":"");
+    div.innerHTML=`<span class="rank-num ${cls}">${i+1}</span>
+                   <img class="rank-avatar" src="${AVATAR_SVGS[item.avatar]}">
+                   <span class="rank-name">${item.isMe?"⭐ ":""}${esc(item.name)}</span>
+                   <div class="rank-bar-wrap"><div class="rank-bar" style="width:${pct}%"></div></div>
+                   <span class="rank-wpm">${item.wpm}<br><span style="font-size:6px;opacity:.6">WPM</span></span>`;
+    container.appendChild(div);
+  });
+}
+
+function backToLobby(){
+  document.getElementById("phaseLobby").classList.add("active");
+  document.getElementById("phaseBattle").classList.remove("active");
+  document.getElementById("phaseResult").classList.remove("active");
+  loadLobbyRank(); pickPrompt();
+}
+
+function todayKey(){return new Date().toISOString().slice(0,10);}
+function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+function showToast(msg){var t=document.getElementById("toast");if(!t)return;t.textContent=msg;t.classList.add("show");setTimeout(function(){t.classList.remove("show");},2500);}
+
+function initStars(){
+  var canvas=document.getElementById("starCanvas");if(!canvas)return;
+  var ctx=canvas.getContext("2d"),stars=[];
+  function resize(){canvas.width=window.innerWidth;canvas.height=window.innerHeight;stars=Array.from({length:80},function(){return{x:Math.random()*canvas.width,y:Math.random()*canvas.height*.65,r:Math.random()<.2?2:1,alpha:Math.random(),speed:.003+Math.random()*.008,phase:Math.random()*Math.PI*2};});}
+  window.addEventListener("resize",resize);resize();
+  var frame=0;
+  (function draw(){ctx.clearRect(0,0,canvas.width,canvas.height);frame++;stars.forEach(function(s){s.alpha=.3+.5*Math.sin(frame*s.speed+s.phase);ctx.globalAlpha=s.alpha;ctx.fillStyle="#fff";ctx.fillRect(s.x,s.y,s.r,s.r);});ctx.globalAlpha=1;requestAnimationFrame(draw);})();
+}
+function initSkyline(){
+  var sky=document.getElementById("skyline");if(!sky)return;
+  [{w:55,h:75},{w:35,h:55},{w:80,h:105},{w:28,h:45},{w:68,h:92},{w:45,h:68},{w:92,h:115},{w:32,h:52},{w:60,h:82},{w:40,h:60},{w:72,h:98},{w:50,h:72},{w:85,h:108},{w:38,h:58},{w:62,h:84},{w:28,h:48},{w:70,h:94},{w:48,h:70},{w:78,h:102},{w:44,h:66}].forEach(function(c){
+    var b=document.createElement("div");b.className="building";b.style.width=c.w+"px";b.style.height=c.h+"px";
+    for(var i=0;i<Math.floor(Math.random()*4);i++){var l=document.createElement("div");l.className="building-light";l.style.left=(6+Math.random()*(c.w-16))+"px";l.style.top=(8+Math.random()*(c.h-20))+"px";l.style.animationDelay=(Math.random()*4)+"s";l.style.animationDuration=(2+Math.random()*4)+"s";b.appendChild(l);}
+    sky.appendChild(b);
+  });
+}
+
+// ── 시작 ─────────────────────────────────────────
+window.addEventListener("DOMContentLoaded",function(){
+  initStars(); initSkyline(); initAvatars(); initFirebase(); 
+  updatePreview(); pickPrompt(); loadLobbyRank();
+  document.getElementById("classSelect").addEventListener("change",updatePreview);
+  document.getElementById("nicknameInput").addEventListener("input",updatePreview);
+});
+</script>
 </body>
 </html>
