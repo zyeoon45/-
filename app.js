@@ -209,8 +209,15 @@ function startBattle() {
 
   setTimeout(function() {
     var inp = document.getElementById("typeInput");
-    if (inp) { inp.value = ""; inp.focus(); }
-  }, 150);
+    if (!inp) return;
+    // 이전 리스너 제거 후 새로 붙이기 (중복 방지)
+    inp.removeEventListener("keydown", handleKeydown);
+    inp.removeEventListener("input",   handleInput);
+    inp.addEventListener("keydown", handleKeydown);
+    inp.addEventListener("input",   handleInput);
+    inp.value = "";
+    inp.focus();
+  }, 200);
 }
 
 // ── 지문 DOM 빌드 ────────────────────────────────
@@ -227,42 +234,29 @@ function buildPromptDisplay() {
   });
 }
 
-// ── Backspace 처리 ───────────────────────────────
-document.addEventListener("keydown", function(e) {
+// ── 타이핑 이벤트 (startBattle에서 직접 붙임) ────
+// handleKeydown / handleInput 은 startBattle() 에서 inp에 직접 addEventListener
+function handleKeydown(e) {
   if (e.key !== "Backspace") return;
-  var battle = document.getElementById("phaseBattle");
-  if (!battle || !battle.classList.contains("active")) return;
-  var inp = document.getElementById("typeInput");
-  if (!inp || document.activeElement !== inp) return;
-
   e.preventDefault();
   if (charIndex === 0) return;
-
   var curEl = document.getElementById("ch" + charIndex);
   if (curEl) curEl.className = "ch pending";
   charIndex--;
   var prevEl = document.getElementById("ch" + charIndex);
   if (prevEl) prevEl.className = "ch cursor";
   myCombo = 0;
-});
+}
 
-// ── 타이핑 처리 ──────────────────────────────────
-document.addEventListener("input", function(e) {
-  if (!e.target || e.target.id !== "typeInput") return;
-
+function handleInput(e) {
   var val = e.target.value;
   if (!val) return;
-
   if (!battleStartTime) battleStartTime = Date.now();
-
   var last = val[val.length - 1];
   e.target.value = "";
-
   var expected = currentPrompt[charIndex];
   if (expected === undefined) return;
-
   totalTyped++;
-
   if (last === expected) {
     var el = document.getElementById("ch" + charIndex);
     if (el) el.className = "ch correct";
@@ -278,22 +272,18 @@ document.addEventListener("input", function(e) {
     errors++;
     myCombo = 0;
   }
-
   var elapsed = (Date.now() - battleStartTime) / 60000;
   myWpm = elapsed > 0 ? Math.round((charIndex / 5) / elapsed) : 0;
   myAcc = totalTyped > 0 ? Math.round(((totalTyped - errors) / totalTyped) * 100) : 100;
-
   document.getElementById("statWpm").textContent   = myWpm;
   document.getElementById("statAcc").textContent   = myAcc;
   document.getElementById("statCombo").textContent = myCombo;
-
   var pct = Math.round((charIndex / currentPrompt.length) * 100);
   document.getElementById("progressBar").style.width = pct + "%";
   document.getElementById("progressLabel").textContent = pct + "%";
-
   if (totalTyped % 5 === 0) updateMyRoomData();
   if (charIndex >= currentPrompt.length) endBattle();
-});
+}
 
 // ── 타이머 ───────────────────────────────────────
 function tickTimer() {
@@ -446,9 +436,8 @@ function renderRankItems(container, items) {
 function setPhase(name) {
   var target = "phase" + name.charAt(0).toUpperCase() + name.slice(1);
   document.querySelectorAll(".phase").forEach(function(el) {
-    var on = el.id === target;
-    el.classList.toggle("active", on);
-    el.style.display = on ? "" : "none";
+    el.classList.toggle("active", el.id === target);
+    el.style.display = ""; // CSS .phase / .phase.active 에 위임
   });
 }
 
