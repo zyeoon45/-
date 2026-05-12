@@ -1,13 +1,18 @@
-// =====================================================
-// TODO: Firebase 콘솔에서 복사한 값으로 교체하세요
-// console.firebase.google.com → 프로젝트 → 웹앱 등록
-// =====================================================
+// Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
+
+// Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey:            "YOUR_API_KEY",
-  authDomain:        "YOUR_PROJECT_ID.firebaseapp.com",
-  databaseURL:       "https://YOUR_PROJECT_ID-default-rtdb.firebaseio.com",
-  projectId:         "YOUR_PROJECT_ID",
-  storageBucket:     "YOUR_PROJECT_ID.appspot.com",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId:             "YOUR_APP_ID",
+  apiKey: "AIzaSyAwKn8FmkXIOTB4i8N6fVBzQHyyd56X1iE",
+  authDomain: "realtime-181b4.firebaseapp.com",
+  databaseURL: "https://realtime-181b4-default-rtdb.firebaseio.com",
+  projectId: "realtime-181b4",
+  storageBucket: "realtime-181b4.firebasestorage.app",
+  messagingSenderId: "542084372146",
+  appId: "1:542084372146:web:d6f990ea4e02e86c10dbab"
 };
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
