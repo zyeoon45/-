@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>땡땡이닷컴 — 수업 중 타자 배틀</title>
+
+  <!-- OG 태그 (SNS 공유용) -->
+  <meta property="og:title"       content="땡땡이닷컴 — 수업 중 타자 배틀">
+  <meta property="og:description" content="수업 중 몰래 즐기는 실시간 타자 경쟁. 지금 접속자들과 배틀하세요.">
+  <meta property="og:image"       content="/og-image.png">
+  <meta property="og:url"         content="https://ddangtangi.netlify.app">
+  <meta name="twitter:card"       content="summary_large_image">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- 배경 레이어 -->
+<div class="pixel-bg"></div>
+<canvas id="starCanvas"></canvas>
+<div class="moon"></div>
+<div class="city-skyline" id="skyline"></div>
+
+<!-- 토스트 알림 -->
+<div id="toast"></div>
+
+<div class="wrapper">
+
+  <!-- ══════════════ PHASE: LOBBY ══════════════ -->
+  <div class="phase active" id="phaseLobby">
+
+    <header class="header">
+      <div class="logo">🎮 땡땡이닷컴</div>
+      <div class="logo-sub">CLASS ESCAPE TYPING BATTLE</div>
+      <div class="live-bar">
+        <div class="live-dot"></div>
+        <span class="live-count">LIVE</span>
+        <span class="live-label" id="liveCountText">접속자 연결 중...</span>
+      </div>
+    </header>
+
+    <!-- 닉네임 설정 -->
+    <div class="card">
+      <div class="card-title">▶ 닉네임 설정 <span class="required">(필수)</span></div>
+      <div class="nickname-row">
+        <select class="px-select" id="classSelect">
+          <option value="">수업 선택</option>
+          <option>경영학원론</option>
+          <option>미시경제학</option>
+          <option>운영체제론</option>
+          <option>마케팅관리</option>
+          <option>알고리즘</option>
+          <option>심리학개론</option>
+          <option>철학의이해</option>
+          <option>선형대수학</option>
+          <option>회계원리</option>
+          <option>통계학</option>
+          <option>영어회화</option>
+          <option>기타수업</option>
+        </select>
+        <input class="px-input" id="nicknameInput" type="text" maxlength="10" placeholder="닉네임 (최대 10자)">
+      </div>
+      <div class="nickname-preview">
+        → 배틀 태그: <span id="previewTag" class="preview-tag">[수업선택] 땡땡이</span>
+      </div>
+    </div>
+
+    <!-- 오늘의 지문 미리보기 -->
+    <div class="card">
+      <div class="card-title">▶ 오늘의 지문 미리보기</div>
+      <div class="prompt-preview" id="promptPreview">로딩 중...</div>
+      <div class="prompt-meta">
+        <span id="promptIndex">-</span>번째 지문 &nbsp;|&nbsp; 매 배틀마다 랜덤 변경
+      </div>
+    </div>
+
+    <!-- 탭 -->
+    <div class="tab-row">
+      <button class="tab active" onclick="switchLobbyTab(0)" id="tabBtn0">실시간 순위</button>
+      <button class="tab"        onclick="switchLobbyTab(1)" id="tabBtn1">🗺 땡땡이 지도</button>
+    </div>
+
+    <!-- 탭0: 랭킹 -->
+    <div id="lobbyTab0">
+      <div class="card">
+        <div class="card-title">▶ 오늘의 랭킹</div>
+        <div class="rank-list" id="lobbyRankList">
+          <div class="rank-empty">아직 오늘 기록이 없어요. 첫 번째 배틀러가 되세요!</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 탭1: 지도 -->
+    <div id="lobbyTab1" style="display:none">
+      <div class="card">
+        <div class="card-title">▶ 지금 땡땡이 중인 지역</div>
+        <div class="map-loading" id="mapLoading">📡 위치 데이터 불러오는 중...</div>
+        <div class="region-list" id="regionList"></div>
+      </div>
+    </div>
+
+    <button class="btn-start" onclick="startBattle()">▶ PRESS START — 배틀 입장</button>
+
+  </div><!-- /phaseLobby -->
+
+
+  <!-- ══════════════ PHASE: BATTLE ══════════════ -->
+  <div class="phase" id="phaseBattle">
+
+    <div class="battle-header">
+      <div class="battle-title">
+        <div class="card-title" style="margin:0">⚔ 타자 배틀 중</div>
+        <div class="my-tag" id="battleMyTag"></div>
+      </div>
+      <div class="timer-box" id="timerDisplay">01:30</div>
+    </div>
+
+    <div class="card" id="arenaCard">
+      <div class="progress-outer">
+        <div class="progress-inner" id="progressBar"></div>
+        <div class="progress-label" id="progressLabel">0%</div>
+      </div>
+
+      <div class="prompt-text" id="promptDisplay"></div>
+
+      <input
+        class="px-input type-input"
+        id="typeInput"
+        type="text"
+        placeholder="여기에 타이핑하세요..."
+        autocomplete="off"
+        autocorrect="off"
+        autocapitalize="off"
+        spellcheck="false"
+      >
+
+      <div class="stats-row">
+        <div class="stat-box"><span class="stat-val" id="statWpm">0</span><span class="stat-label">WPM</span></div>
+        <div class="stat-box"><span class="stat-val" id="statAcc">100</span><span class="stat-label">정확도%</span></div>
+        <div class="stat-box"><span class="stat-val" id="statRank">-</span><span class="stat-label">내 순위</span></div>
+        <div class="stat-box"><span class="stat-val" id="statCombo">0</span><span class="stat-label">콤보🔥</span></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">▶ 실시간 순위판</div>
+      <div class="rank-list" id="battleRankList">
+        <div class="rank-empty">상대방 연결 대기 중...</div>
+      </div>
+    </div>
+
+  </div><!-- /phaseBattle -->
+
+
+  <!-- ══════════════ PHASE: RESULT ══════════════ -->
+  <div class="phase" id="phaseResult">
+
+    <div class="result-banner" id="resultBanner">🎉 배틀 종료!</div>
+
+    <div class="result-grid">
+      <div class="result-box">
+        <span class="result-big-val" id="resWpm">0</span>
+        <span class="stat-label">WPM</span>
+      </div>
+      <div class="result-box">
+        <span class="result-big-val" id="resAcc">0%</span>
+        <span class="stat-label">정확도</span>
+      </div>
+      <div class="result-box">
+        <span class="result-big-val" id="resCombo">0</span>
+        <span class="stat-label">최대 콤보</span>
+      </div>
+      <div class="result-box">
+        <span class="result-big-val" id="resPrompt">-</span>
+        <span class="stat-label">지문</span>
+      </div>
+    </div>
+
+    <!-- SNS 공유 카드 -->
+    <div class="share-card">
+      <div class="card-title" style="margin-bottom:12px">▶ 결과 공유하기</div>
+      <canvas id="shareCanvas" style="max-width:100%;border:1px solid #2a1860;margin-bottom:14px;display:block"></canvas>
+      <div class="share-btn-row">
+        <button class="share-btn twitter" onclick="shareTwitter()">🐦 트위터 공유</button>
+        <button class="share-btn copy"    onclick="copyShareLink()">🔗 링크 복사</button>
+        <button class="share-btn img"     onclick="downloadShareImage()">💾 이미지 저장</button>
+      </div>
+    </div>
+
+    <!-- 오늘 최종 랭킹 -->
+    <div class="card">
+      <div class="card-title">▶ 오늘 최종 순위</div>
+      <div class="rank-list" id="resultRankList">
+        <div class="rank-empty">랭킹 불러오는 중...</div>
+      </div>
+    </div>
+
+    <button class="btn-start" onclick="backToLobby()">↩ 다시 도전하기</button>
+
+  </div><!-- /phaseResult -->
+
+</div><!-- /wrapper -->
+
+<!-- Firebase SDK (compat 버전 — CDN) -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+<!-- TODO: 아래 파일에 Firebase config 채우기 -->
+<script src="firebase-config.js"></script>
+
+<!-- 게임 로직 -->
+<script src="app.js"></script>
+
+</body>
+</html>
