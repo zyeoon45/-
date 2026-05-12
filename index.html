@@ -13,7 +13,9 @@
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
   --bg:#0a0a14;--bg2:#0f0a04;--bg3:#1a1005;
-  --border:#2a1510;--border2:#5a3510;
+  /* 테두리 색상을 훨씬 밝고 선명하게 변경했습니다 */
+  --border:#4a2b18; 
+  --border2:#8a4515;
   --orange:#e8621a;--orange2:#ff7a20;
   --cyan:#44ffcc;--yellow:#ffcc00;--red:#ff4455;--green:#44ff88;
   --text:#f0e8d8;--muted:#7a5a30;
@@ -25,16 +27,20 @@ body{background:var(--bg);color:var(--text);font-family:var(--mono);min-height:1
   background:repeating-linear-gradient(0deg,transparent,transparent 31px,rgba(180,100,20,.05) 32px),
              repeating-linear-gradient(90deg,transparent,transparent 31px,rgba(180,100,20,.05) 32px)}
 #starCanvas{position:fixed;inset:0;z-index:0;pointer-events:none}
-.moon{position:fixed;top:48px;right:80px;z-index:0;width:64px;height:64px;
-  background:var(--yellow);box-shadow:4px 4px 0 #aa8800;animation:moonFloat 6s ease-in-out infinite}
-@keyframes moonFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
 .city-skyline{position:fixed;bottom:0;left:0;right:0;height:130px;z-index:0;display:flex;align-items:flex-end;pointer-events:none}
 .building{background:var(--bg3);border-top:2px solid #2a1508;flex-shrink:0;position:relative;overflow:hidden}
 .building::after{content:'';position:absolute;inset:8px 6px 0;
   background:repeating-linear-gradient(transparent,transparent 9px,rgba(255,160,80,.08) 9px,rgba(255,160,80,.08) 11px)}
 .building-light{position:absolute;width:4px;height:4px;background:var(--yellow);animation:winBlink 3s step-end infinite}
 @keyframes winBlink{0%,100%{opacity:.8}50%{opacity:.1}}
-.wrapper{position:relative;z-index:1;max-width:860px;margin:0 auto;padding:0 16px 180px}
+.wrapper{position:relative;z-index:1;max-width:860px;margin:0 auto;padding:0 16px 180px; transition: all 0.3s ease;}
+.wrapper.mobile-mode {max-width: 400px; background: rgba(10,10,20,0.95); border: 2px solid var(--border2); border-radius: 20px; margin-top: 60px; padding-top: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.8);}
+
+.view-toggle {position: fixed; top: 16px; right: 16px; z-index: 999; display: flex; gap: 4px; background: var(--bg2); border: 2px solid var(--border2); padding: 4px; border-radius: 8px;}
+.view-btn {background: transparent; border: none; color: var(--muted); font-family: var(--pixel); font-size: 10px; cursor: pointer; padding: 8px 12px; border-radius: 4px; transition: all 0.2s;}
+.view-btn.active {background: var(--orange2); color: #fff; text-shadow: 1px 1px 0 rgba(0,0,0,0.5);}
+.view-btn:hover:not(.active) {color: var(--text);}
+
 .phase{display:none}.phase.active{display:block}
 .header{text-align:center;padding:36px 0 24px}
 .logo{font-family:var(--pixel);font-size:clamp(18px,4vw,26px);color:var(--orange2);
@@ -71,7 +77,8 @@ body{background:var(--bg);color:var(--text);font-family:var(--mono);min-height:1
   font-family:var(--mono);font-size:15px;padding:12px 14px;outline:none;appearance:none;transition:border-color .15s}
 .px-select{flex:0 0 180px;cursor:pointer}
 .px-input{flex:1;min-width:140px}
-.px-input::placeholder{color:#3a1f08}
+/* placeholder 글씨 색상도 훨씬 밝게 수정했습니다 */
+.px-input::placeholder{color:#8a5a38}
 .px-input:focus,.px-select:focus{border-color:var(--orange2)}
 .nickname-preview{margin-top:12px;font-size:13px;color:var(--muted)}
 .preview-tag{color:var(--orange2);font-weight:bold;font-size:14px;}
@@ -152,17 +159,27 @@ body{background:var(--bg);color:var(--text);font-family:var(--mono);min-height:1
   font-family:var(--pixel);font-size:11px;padding:14px 24px;z-index:999;
   opacity:0;pointer-events:none;transition:opacity .3s}
 #toast.show{opacity:1}
-@media(max-width:520px){.stats-row{grid-template-columns:repeat(2,1fr)}.rank-bar-wrap{display:none}.moon{display:none}}
+
+@media(max-width: 600px) {
+  .view-toggle { display: none; }
+  .wrapper.mobile-mode { max-width: 100%; border: none; border-radius: 0; margin-top: 0; box-shadow: none; padding-top: 0;}
+  .stats-row{grid-template-columns:repeat(2,1fr)}.rank-bar-wrap{display:none}
+}
 </style>
 </head>
 <body>
 <div class="pixel-bg"></div>
 <canvas id="starCanvas"></canvas>
-<div class="moon"></div>
 <div class="city-skyline" id="skyline"></div>
 <div id="toast"></div>
 
-<div class="wrapper">
+<!-- 화면 뷰 전환 토글 (데스크탑에서만 표시) -->
+<div class="view-toggle">
+  <button id="btn-desktop" class="view-btn active" onclick="setViewMode('desktop')">💻 PC</button>
+  <button id="btn-mobile" class="view-btn" onclick="setViewMode('mobile')">📱 모바일</button>
+</div>
+
+<div class="wrapper" id="mainWrapper">
 
   <!-- LOBBY -->
   <div class="phase active" id="phaseLobby">
@@ -301,6 +318,23 @@ const firebaseConfig = {
 </script>
 <script>
 
+// ── 기기 선택 토글 ────────────────────────────────
+function setViewMode(mode) {
+  const wrapper = document.getElementById('mainWrapper');
+  const btnDesktop = document.getElementById('btn-desktop');
+  const btnMobile = document.getElementById('btn-mobile');
+
+  if (mode === 'mobile') {
+    wrapper.classList.add('mobile-mode');
+    btnMobile.classList.add('active');
+    btnDesktop.classList.remove('active');
+  } else {
+    wrapper.classList.remove('mobile-mode');
+    btnDesktop.classList.add('active');
+    btnMobile.classList.remove('active');
+  }
+}
+
 // ── 픽셀 아트 아바타 생성기 (SVG Base64) ───────────────
 const AVATAR_NAMES = ["컴공오리", "지박령", "과탑안경", "학교냥이", "복학생"];
 const AVATAR_PALS = {
@@ -327,18 +361,18 @@ const AVATAR_SVGS = AVATAR_DATA.map(data => {
   return "data:image/svg+xml;base64," + btoa(svg);
 });
 
-// ── 지문 (스피디한 학교 테마) ────────────────────────
+// ── 트렌디한 최신 지문 업데이트 ────────────────────────
 const PROMPTS = [
-  "솔직히 이 내용은 시험에 안 나올 것 같다. 마음을 비우고 타자 연습이나 열심히 해야겠다. 교수님 죄송합니다.",
-  "교수님의 시선을 피해 모니터만 뚫어져라 쳐다본다. 엄청난 학구열에 불타는 줄 아시겠지만 사실 딴짓 중이다.",
-  "강의실 에어컨이 너무 빵빵해서 손가락이 굳어간다. 추위와 졸음이 동시에 밀려오는 기적의 공간이다.",
-  "방금 교수님이 시험에 나온다고 강조하셨다. 하지만 타자 배틀에 집중하느라 제대로 못 들었다. 내 학점 안녕.",
-  "앞자리 친구의 노트북 화면에 화려한 게임이 켜져 있다. 나도 모르게 시선이 간다. 이러다 둘 다 학고 받겠다.",
-  "타건감이 좋은 키보드를 가져올 걸 그랬다. 멤브레인 키보드로는 내 화려한 타자 실력을 100% 발휘하기 어렵다.",
-  "오늘 점심은 학식 말고 맛있는 걸 먹어야겠다. 타자를 치며 메뉴를 고민하는 이 순간이 수업 중 가장 짜릿하다.",
-  "출석체크가 끝나는 순간 강의실의 공기가 달라진다. 다들 각자의 세계로 빠져드는 시간. 나도 타자의 세계로 간다.",
-  "이 학점은 쿨하게 포기해도 내 타자 속도만큼은 포기할 수 없다. 땡땡이닷컴 1등은 무조건 내 차지다.",
-  "모니터 뒤에 숨어서 미친 듯이 키보드를 두드린다. 타자 소리만 들으면 내가 이 수업 수석일 것이다."
+  "과제가 3개나 겹쳤지만 덕분에 타자 실력이 늘겠네! 이거 완전 럭키비키잖아!",
+  "숏폼 도파민에 절여진 뇌를 깨우기 위해 타자를 친다. 1분 넘는 강의는 이제 못 듣겠다.",
+  "인공지능이 내 과제도 해주고 코딩도 해주는 시대에 나는 왜 여기서 키보드를 두드리는가.",
+  "교수님 MBTI는 분명 극 'T'일 것이다. 기말고사 범위에서 피도 눈물도 느껴지지 않는다.",
+  "비대면 줌 수업 시절, 카메라 끄고 침대에서 귤 까먹던 그 겨울이 사무치게 그립다.",
+  "마라탕 먹고 후식으로 요아정까지 완벽하게 조지는 상상을 하며 이 지루한 수업을 버틴다.",
+  "제로 슈거 시대에 발맞춰 내 이번 학기 학점도 제로를 향해 무한히 수렴하고 있다.",
+  "수업은 안 듣고 몰래 앱테크 켜서 포인트 받고 있는 거 다 안다. 너도 땡땡이닷컴 하러 와라.",
+  "유튜브 알고리즘이 나를 이 타자 배틀로 이끌었다. 교수님의 목소리는 백색소음이 된 지 오래다.",
+  "떡상할 밈코인을 찾는 매의 눈으로 모니터를 노려본다. 졸업장보다 코인 수익률이 더 중요하다."
 ];
 
 // ── 상태 ─────────────────────────────────────────
