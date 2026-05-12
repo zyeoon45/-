@@ -383,6 +383,7 @@ var timerSec=60,timerInterval=null,battleStartTime=null;
 // ── 초기화 ────────────────────────────────────────
 function initAvatars() {
   const container = document.getElementById("avatarContainer");
+  if(!container) return;
   AVATAR_SVGS.forEach((svg, idx) => {
     let btn = document.createElement("div");
     btn.className = "avatar-btn" + (idx === 0 ? " selected" : "");
@@ -462,7 +463,7 @@ async function loadRegionMap(){
     try{
       var s=await db.ref("regions").once("value"); regions=s.val()||{};
       var r=await fetch("https://ipapi.co/json/"); var g=await r.json();
-      var k=((g.city||"알수없음")+"_"+(g.region||"")).replace(/[.#$\/\[\]\s]/g,"_");
+      var k=((g.city||"알수없음")+"_"+(g.region||"")).replace(/[.#$\[\]\/\s]/g,"_");
       await db.ref("regions/"+k).transaction(function(v){return(v||0)+1;});
       s=await db.ref("regions").once("value"); regions=s.val()||{};
     }catch(e){}
@@ -482,4 +483,274 @@ async function loadRegionMap(){
 }
 
 async function loadLobbyRank(){
-  var list=document.
+  var list=document.getElementById("lobbyRankList"); if(!list)return;
+  if(!db){list.innerHTML='<div class="rank-empty">Firebase 연결 후 실시간 랭킹이 표시됩니다.</div>';return;}
+  var snap=await db.ref("daily/"+todayKey()).orderByChild("wpm").limitToLast(10).once("value");
+  var rows=[]; snap.forEach(function(c){rows.unshift(c.val());});
+  if(!rows.length){list.innerHTML='<div class="rank-empty">오늘 기록이 없어요. 첫 배틀러가 되세요!</div>';return;}
+  renderRankItems(list,rows.map(function(r){return{name:r.tag||"익명",wpm:r.wpm,avatar:r.avatar||0,isMe:false};}));
+}
+
+// ── 배틀 시작 ────────────────────────────────────
+function startBattle(){
+  var nick=(document.getElementById("nicknameInput").value||"").trim();
+  var cls=document.getElementById("classSelect").value;
+  if(!nick||!cls){showToast("닉네임과 수업을 선택하세요!");return;}
+
+  charIndex=0;errors=0;totalTyped=0;myWpm=0;myAcc=100;myCombo=0;
+  timerSec=60; battleStartTime=null;
+
+  pickPrompt();
+  buildPromptDisplay();
+
+  document.getElementById("battleMyAvatar").src = AVATAR_SVGS[myAvatarIdx];
+  document.getElementById("battleMyName").textContent = myTag;
+  document.getElementById("progressRunner").src = AVATAR_SVGS[myAvatarIdx];
+  
+  document.getElementById("statWpm").textContent="0";
+  document.getElementById("statAcc").textContent="100";
+  document.getElementById("statRank").textContent="-";
+  document.getElementById("statCombo").textContent="0";
+  document.getElementById("progressBar").style.width="0%";
+  document.getElementById("progressRunner").style.left="0%";
+  document.getElementById("progressLabel").textContent="0%";
+  document.getElementById("timerDisplay").textContent="01:00";
+  document.getElementById("timerDisplay").classList.remove("danger");
+  document.getElementById("battleRankList").innerHTML='<div class="rank-empty">상대방 연결 대기 중...</div>';
+
+  document.getElementById("phaseLobby").classList.remove("active");
+  document.getElementById("phaseBattle").classList.add("active");
+  document.getElementById("phaseResult").classList.remove("active");
+
+  if(timerInterval)clearInterval(timerInterval);
+  timerInterval=setInterval(tickTimer,1000);
+  joinBattleRoom();
+
+  var inp=document.getElementById("typeInput");
+  attachTypingIfNeeded(inp);
+  inp.value="";
+  inp.focus();
+}
+
+// ── 타이핑 핸들러 ────────────────────────────────
+function attachTypingIfNeeded(inp){
+  if(!inp)return;
+  if(inp.dataset.attached==="1")return;
+  inp.dataset.attached="1";
+  inp.addEventListener("input", handleInput);
+}
+
+function handleInput(e){
+  var val = e.target.value;
+  if(!battleStartTime && val.length > 0) battleStartTime = Date.now();
+  if(val.length > currentPrompt.length) {
+    val = val.substring(0, currentPrompt.length);
+    e.target.value = val;
+  }
+
+  charIndex = val.length; 
+  errors = 0; myCombo = 0;
+
+  for(var i = 0; i < currentPrompt.length; i++) {
+    var el = document.getElementById("ch" + i);
+    if(!el) continue;
+    if(i < val.length) {
+      if(val[i] === currentPrompt[i]) { el.className = "ch correct"; myCombo++; } 
+      else { el.className = "ch wrong"; errors++; myCombo = 0; }
+    } else if (i === val.length) { el.className = "ch cursor"; } 
+    else { el.className = "ch pending"; }
+  }
+
+  var elapsed = (Date.now() - battleStartTime) / 60000;
+  myWpm = elapsed > 0 ? Math.round((charIndex / 5) / elapsed) : 0;
+  myAcc = charIndex > 0 ? Math.round(((charIndex - errors) / charIndex) * 100) : 100;
+  
+  document.getElementById("statWpm").textContent = myWpm;
+  document.getElementById("statAcc").textContent = myAcc;
+  document.getElementById("statCombo").textContent = myCombo;
+  
+  var pct = Math.round((charIndex / currentPrompt.length) * 100);
+  document.getElementById("progressBar").style.width = pct + "%";
+  document.getElementById("progressRunner").style.left = pct + "%";
+  document.getElementById("progressLabel").textContent = pct + "%";
+  
+  if(charIndex % 5 === 0 && charIndex > 0) updateMyRoomData();
+  
+  if(charIndex >= currentPrompt.length) {
+    setTimeout(function() {
+      if(document.getElementById("typeInput").value.length >= currentPrompt.length) endBattle();
+    }, 50);
+  }
+}
+
+function tickTimer(){
+  timerSec--;
+  var m=String(Math.floor(timerSec/60)).padStart(2,"0"),s=String(timerSec%60).padStart(2,"0");
+  document.getElementById("timerDisplay").textContent=m+":"+s;
+  if(timerSec<=10)document.getElementById("timerDisplay").classList.add("danger");
+  if(timerSec<=0)endBattle();
+}
+
+function joinBattleRoom(){
+  if(!db)return;
+  battleRoomId="room_"+Math.floor(Date.now()/30000);
+  myRoomRef=db.ref("rooms/"+battleRoomId+"/players/"+mySessionId);
+  myRoomRef.set({tag:myTag,wpm:0,acc:100,progress:0,avatar:myAvatarIdx,at:Date.now()});
+  myRoomRef.onDisconnect().remove();
+  if(rankListener)db.ref("rooms/"+battleRoomId+"/players").off("value",rankListener);
+  rankListener=db.ref("rooms/"+battleRoomId+"/players").on("value",function(snap){
+    var players=[]; snap.forEach(function(c){players.push(Object.assign({id:c.key},c.val()));});
+    renderBattleRank(players);
+  });
+}
+function updateMyRoomData(){if(!myRoomRef)return;myRoomRef.update({wpm:myWpm,acc:myAcc,progress:Math.round((charIndex/currentPrompt.length)*100)});}
+
+// ── 배틀 종료 (중복 이름 덮어쓰기 로직 적용) ────────────────
+async function endBattle(){
+  clearInterval(timerInterval); timerInterval=null;
+  updateMyRoomData();
+  if(db){
+    // 태그(수업+닉네임)를 기반으로 고유 키 생성. 특수문자를 제거하여 안전한 키로 변환
+    var safeKey = myTag.replace(/[.#$\[\]\/\s]/g, "_");
+    
+    // push() 대신 특정 키(safeKey)에 set()을 사용하여 똑같은 아이디면 최신값으로 덮어씀
+    await db.ref("daily/"+todayKey()+"/"+safeKey).set({
+      tag: myTag,
+      wpm: myWpm,
+      acc: myAcc,
+      promptIdx: currentPromptIdx,
+      avatar: myAvatarIdx,
+      at: Date.now()
+    });
+    
+    if(myRoomRef)myRoomRef.remove();
+  }
+  await buildResultScreen();
+  document.getElementById("phaseLobby").classList.remove("active");
+  document.getElementById("phaseBattle").classList.remove("active");
+  document.getElementById("phaseResult").classList.add("active");
+}
+
+async function buildResultScreen(){
+  document.getElementById("resWpm").textContent=myWpm;
+  document.getElementById("resAcc").textContent=myAcc+"%";
+  document.getElementById("resCombo").textContent=myCombo;
+  document.getElementById("resPrompt").textContent="지문 "+(currentPromptIdx+1)+"번";
+  var myRank=1,total=1,resultList=document.getElementById("resultRankList");
+  if(db){
+    var snap=await db.ref("daily/"+todayKey()).orderByChild("wpm").once("value");
+    var rows=[]; snap.forEach(function(c){rows.push(c.val());}); rows.sort(function(a,b){return b.wpm-a.wpm;});
+    total=rows.length; myRank=rows.findIndex(function(r){return r.tag===myTag&&r.wpm===myWpm;})+1||1;
+    renderRankItems(resultList,rows.slice(0,8).map(function(r){return{name:r.tag,wpm:r.wpm,avatar:r.avatar||0,isMe:r.tag===myTag&&r.wpm===myWpm};}));
+  }else{if(resultList)resultList.innerHTML='<div class="rank-empty">Firebase 연결 후 랭킹이 저장됩니다.</div>';}
+  var msgs={1:"🏆 1등! 수업 중 최강 타자 등극!",2:"🥈 2등! 조금만 더 빨랐으면...",3:"🥉 3등! 교수님보단 빠르다"};
+  document.getElementById("resultBanner").textContent=msgs[myRank]||(myRank+"등 / 오늘 "+total+"명 중 — 다음엔 꼭 1등!");
+  drawShareCard(myWpm,myAcc,myRank,total);
+}
+
+function drawShareCard(wpm,acc,rank,total){
+  var canvas=document.getElementById("shareCanvas"); if(!canvas)return;
+  var ctx=canvas.getContext("2d"); canvas.width=600;canvas.height=300;
+  ctx.fillStyle="#0a0a0a";ctx.fillRect(0,0,600,300);
+  ctx.strokeStyle="#e8621a";ctx.lineWidth=3;ctx.strokeRect(3,3,594,294);
+  
+  let avaImg = new Image();
+  avaImg.onload = function() {
+    ctx.drawImage(avaImg, 510, 24, 60, 60); 
+  };
+  avaImg.src = AVATAR_SVGS[myAvatarIdx];
+
+  ctx.fillStyle="#ff7a20";ctx.font="bold 16px monospace";ctx.fillText("땡땡이닷컴 — CLASS ESCAPE TYPING BATTLE",24,44);
+  ctx.fillStyle="#ff7a20";ctx.font="bold 52px monospace";ctx.fillText(wpm,24,148);
+  ctx.fillStyle="#7a5a30";ctx.font="13px monospace";ctx.fillText("WPM",24,170);
+  ctx.fillStyle="#44ffcc";ctx.font="bold 28px monospace";ctx.fillText(acc+"%",180,140);
+  ctx.fillStyle="#7a5a30";ctx.font="13px monospace";ctx.fillText("정확도",180,162);
+  ctx.fillStyle="#ffcc00";ctx.font="bold 28px monospace";ctx.fillText(rank+"위",320,140);
+  ctx.fillStyle="#7a5a30";ctx.font="13px monospace";ctx.fillText("오늘 "+total+"명 중",320,162);
+  ctx.fillStyle="#1a1004";ctx.fillRect(0,240,600,60);
+  ctx.fillStyle="#f0e8d8";ctx.font="12px monospace";ctx.fillText("수업 중 몰래 즐기는 실시간 타자 배틀",24,264);
+  ctx.fillStyle="#e8621a";ctx.fillText("ddangtangi.netlify.app",24,286);
+}
+
+function shareTwitter(){var w=document.getElementById("resWpm").textContent;window.open("https://twitter.com/intent/tweet?text="+encodeURIComponent("수업 중에 "+w+" WPM 찍었다💀\n땡땡이닷컴 👉 ddangtangi.netlify.app\n#땡땡이닷컴"),"_blank");}
+function copyShareLink(){navigator.clipboard.writeText("ddangtangi.netlify.app").then(function(){showToast("링크 복사 완료! 🎮");});}
+function downloadShareImage(){var c=document.getElementById("shareCanvas"),a=document.createElement("a");a.download="ddangtangi_result.png";a.href=c.toDataURL();a.click();}
+
+// ── 랭킹 렌더 ─────────────────────────────────────
+function renderBattleRank(players){
+  var sorted=players.slice().sort(function(a,b){return(b.wpm||0)-(a.wpm||0);});
+  var myIdx=sorted.findIndex(function(p){return p.id===mySessionId;});
+  document.getElementById("statRank").textContent=myIdx>=0?(myIdx+1)+"위":"-";
+  renderRankItems(document.getElementById("battleRankList"),sorted.map(function(p){return{name:p.tag||"익명",wpm:p.wpm||0,avatar:p.avatar||0,isMe:p.id===mySessionId};}));
+}
+function renderRankItems(container,items){
+  if(!container)return;
+  var max=Math.max.apply(null,items.map(function(i){return i.wpm;}).concat([1]));
+  container.innerHTML="";
+  items.forEach(function(item,i){
+    var cls=["gold","silver","bronze"][i]||"other",pct=Math.round((item.wpm/max)*100);
+    var div=document.createElement("div"); div.className="rank-item"+(item.isMe?" is-me":"");
+    div.innerHTML=`<span class="rank-num ${cls}">${i+1}</span>
+                   <img class="rank-avatar" src="${AVATAR_SVGS[item.avatar]}">
+                   <span class="rank-name">${item.isMe?"⭐ ":""}${esc(item.name)}</span>
+                   <div class="rank-bar-wrap"><div class="rank-bar" style="width:${pct}%"></div></div>
+                   <span class="rank-wpm">${item.wpm}<br><span style="font-size:6px;opacity:.6">WPM</span></span>`;
+    container.appendChild(div);
+  });
+}
+
+function backToLobby(){
+  document.getElementById("phaseLobby").classList.add("active");
+  document.getElementById("phaseBattle").classList.remove("active");
+  document.getElementById("phaseResult").classList.remove("active");
+  loadLobbyRank(); pickPrompt();
+}
+
+function todayKey(){return new Date().toISOString().slice(0,10);}
+function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+function showToast(msg){var t=document.getElementById("toast");if(!t)return;t.textContent=msg;t.classList.add("show");setTimeout(function(){t.classList.remove("show");},2500);}
+
+function initStars(){
+  var canvas=document.getElementById("starCanvas");if(!canvas)return;
+  var ctx=canvas.getContext("2d"),stars=[];
+  function resize(){canvas.width=window.innerWidth;canvas.height=window.innerHeight;stars=Array.from({length:80},function(){return{x:Math.random()*canvas.width,y:Math.random()*canvas.height*.65,r:Math.random()<.2?2:1,alpha:Math.random(),speed:.003+Math.random()*.008,phase:Math.random()*Math.PI*2};});}
+  window.addEventListener("resize",resize);resize();
+  var frame=0;
+  (function draw(){ctx.clearRect(0,0,canvas.width,canvas.height);frame++;stars.forEach(function(s){s.alpha=.3+.5*Math.sin(frame*s.speed+s.phase);ctx.globalAlpha=s.alpha;ctx.fillStyle="#fff";ctx.fillRect(s.x,s.y,s.r,s.r);});ctx.globalAlpha=1;requestAnimationFrame(draw);})();
+}
+function initSkyline(){
+  var sky=document.getElementById("skyline");if(!sky)return;
+  [{w:55,h:75},{w:35,h:55},{w:80,h:105},{w:28,h:45},{w:68,h:92},{w:45,h:68},{w:92,h:115},{w:32,h:52},{w:60,h:82},{w:40,h:60},{w:72,h:98},{w:50,h:72},{w:85,h:108},{w:38,h:58},{w:62,h:84},{w:28,h:48},{w:70,h:94},{w:48,h:70},{w:78,h:102},{w:44,h:66}].forEach(function(c){
+    var b=document.createElement("div");b.className="building";b.style.width=c.w+"px";b.style.height=c.h+"px";
+    for(var i=0;i<Math.floor(Math.random()*4);i++){var l=document.createElement("div");l.className="building-light";l.style.left=(6+Math.random()*(c.w-16))+"px";l.style.top=(8+Math.random()*(c.h-20))+"px";l.style.animationDelay=(Math.random()*4)+"s";l.style.animationDuration=(2+Math.random()*4)+"s";b.appendChild(l);}
+    sky.appendChild(b);
+  });
+}
+
+// ── 시작 (DOMContentLoaded 의존성 제거 및 즉시 실행 보장) ──────────────
+function initApp() {
+  initStars(); 
+  initSkyline(); 
+  initAvatars(); 
+  initFirebase(); 
+  updatePreview(); 
+  pickPrompt(); 
+  loadLobbyRank();
+  
+  var clsSelect = document.getElementById("classSelect");
+  var nickInput = document.getElementById("nicknameInput");
+  if(clsSelect) clsSelect.addEventListener("change",updatePreview);
+  if(nickInput) nickInput.addEventListener("input",updatePreview);
+}
+
+// 페이지가 어느 환경(웹 에디터, 캔버스 등)에서 렌더링 되더라도 
+// 스크립트가 무조건 확실하게 실행되도록 즉시 실행합니다.
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initApp);
+} else {
+  initApp();
+}
+
+</script>
+</body>
+</html>
