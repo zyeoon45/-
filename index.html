@@ -6,15 +6,12 @@
 <title>땡땡이닷컴 — 수업 중 타자 배틀</title>
 <meta property="og:title" content="땡땡이닷컴 — 수업 중 타자 배틀">
 <meta property="og:description" content="수업 중 몰래 즐기는 실시간 타자 경쟁.">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Share+Tech+Mono&display=swap');
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
   --bg:#0a0a14;--bg2:#0f0a04;--bg3:#1a1005;
-  --border:#4a2b18; 
-  --border2:#8a4515;
+  --border:#2a1510;--border2:#5a3510;
   --orange:#e8621a;--orange2:#ff7a20;
   --cyan:#44ffcc;--yellow:#ffcc00;--red:#ff4455;--green:#44ff88;
   --text:#f0e8d8;--muted:#7a5a30;
@@ -22,168 +19,344 @@
 }
 html{scroll-behavior:smooth}
 body{background:var(--bg);color:var(--text);font-family:var(--mono);min-height:100vh;overflow-x:hidden}
+
+/* ── 모바일 차단 ── */
+#mobileBlock{display:none;position:fixed;inset:0;background:#0a0a14;z-index:9999;
+  align-items:center;justify-content:center;flex-direction:column;text-align:center;padding:40px}
+#mobileBlock .icon{font-size:48px;margin-bottom:20px}
+#mobileBlock .msg{font-family:var(--pixel);font-size:11px;color:var(--orange2);line-height:2.2;margin-bottom:16px}
+#mobileBlock .sub{font-size:13px;color:var(--muted);line-height:1.8}
+@media(max-width:768px){#mobileBlock{display:flex}#app{display:none}}
+
+/* ── 배경 ── */
 .pixel-bg{position:fixed;inset:0;z-index:0;pointer-events:none;
   background:repeating-linear-gradient(0deg,transparent,transparent 31px,rgba(180,100,20,.05) 32px),
              repeating-linear-gradient(90deg,transparent,transparent 31px,rgba(180,100,20,.05) 32px)}
 #starCanvas{position:fixed;inset:0;z-index:0;pointer-events:none}
+.moon{position:fixed;top:48px;right:80px;z-index:0;width:64px;height:64px;
+  background:var(--yellow);box-shadow:4px 4px 0 #aa8800;animation:moonFloat 6s ease-in-out infinite}
+@keyframes moonFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
 .city-skyline{position:fixed;bottom:0;left:0;right:0;height:130px;z-index:0;display:flex;align-items:flex-end;pointer-events:none}
 .building{background:var(--bg3);border-top:2px solid #2a1508;flex-shrink:0;position:relative;overflow:hidden}
 .building::after{content:'';position:absolute;inset:8px 6px 0;
   background:repeating-linear-gradient(transparent,transparent 9px,rgba(255,160,80,.08) 9px,rgba(255,160,80,.08) 11px)}
 .building-light{position:absolute;width:4px;height:4px;background:var(--yellow);animation:winBlink 3s step-end infinite}
 @keyframes winBlink{0%,100%{opacity:.8}50%{opacity:.1}}
-.wrapper{position:relative;z-index:1;max-width:860px;margin:0 auto;padding:0 16px 180px; transition: all 0.3s ease;}
-.wrapper.mobile-mode {max-width: 400px; background: rgba(10,10,20,0.95); border: 2px solid var(--border2); border-radius: 20px; margin-top: 60px; padding-top: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.8);}
 
-.view-toggle {position: fixed; top: 16px; right: 16px; z-index: 999; display: flex; gap: 4px; background: var(--bg2); border: 2px solid var(--border2); padding: 4px; border-radius: 8px;}
-.view-btn {background: transparent; border: none; color: var(--muted); font-family: var(--pixel); font-size: 10px; cursor: pointer; padding: 8px 12px; border-radius: 4px; transition: all 0.2s;}
-.view-btn.active {background: var(--orange2); color: #fff; text-shadow: 1px 1px 0 rgba(0,0,0,0.5);}
-.view-btn:hover:not(.active) {color: var(--text);}
-
+/* ── 레이아웃 ── */
+.wrapper{position:relative;z-index:1;max-width:900px;margin:0 auto;padding:0 16px 180px;overflow-x:hidden}
 .phase{display:none}.phase.active{display:block}
+
+/* ── 헤더 ── */
 .header{text-align:center;padding:36px 0 24px}
-.logo{font-family:var(--pixel);font-size:clamp(18px,4vw,26px);color:var(--orange2);
+.logo{font-family:var(--pixel);font-size:clamp(14px,3vw,22px);color:var(--orange2);
   text-shadow:4px 4px 0 #8a3800;line-height:1.7;animation:logoPulse 2.5s ease-in-out infinite}
 @keyframes logoPulse{0%,100%{text-shadow:4px 4px 0 #8a3800}50%{text-shadow:4px 4px 0 #c45010,0 0 20px rgba(255,130,20,.25)}}
-.logo-sub{font-family:var(--pixel);font-size:10px;color:var(--orange);margin-top:10px;letter-spacing:2px}
-.live-bar{display:flex;align-items:center;justify-content:center;gap:12px;margin:20px 0 0}
+.logo-sub{font-family:var(--pixel);font-size:8px;color:var(--orange);margin-top:10px;letter-spacing:2px}
+.live-bar{display:flex;align-items:center;justify-content:center;gap:12px;margin:16px 0 0}
 .live-dot{width:8px;height:8px;background:var(--red);animation:liveBlink 1s step-end infinite}
 @keyframes liveBlink{0%,100%{opacity:1}50%{opacity:0}}
-.live-count{font-family:var(--pixel);font-size:10px;color:var(--red)}
-.live-label{font-size:13px;color:var(--muted)}
-.card{background:rgba(15,8,4,.9);border:2px solid var(--border);padding:24px;margin-bottom:16px}
-.card-title{font-family:var(--pixel);font-size:12px;color:var(--orange);letter-spacing:1px;margin-bottom:20px;text-transform:uppercase;line-height:1.5;}
-.required{color:var(--orange2);font-size:10px;vertical-align:middle;margin-left:4px;}
+.live-count{font-family:var(--pixel);font-size:8px;color:var(--red)}
+.live-label{font-size:12px;color:var(--muted)}
 
-/* 캐릭터 선택 UI */
-.avatar-row { display: flex; gap: 14px; justify-content: center; margin-bottom: 12px; flex-wrap: wrap; }
-.avatar-btn {
-  width: 58px; height: 58px; border: 2px solid var(--border2);
-  background: var(--bg2); border-radius: 6px; cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
-  transition: all 0.2s; position: relative;
-}
-.avatar-btn img { width: 40px; height: 40px; image-rendering: pixelated; }
-.avatar-btn:hover { border-color: var(--orange); transform: translateY(-2px); }
-.avatar-btn.selected { 
-  border-color: var(--orange2); background: rgba(255,122,32,0.2); 
-  transform: translateY(-4px); box-shadow: 0 4px 0 #8a3800; 
-}
-.avatar-name-display { font-family:var(--pixel); text-align: center; font-size: 10px; color: var(--cyan); margin-bottom: 24px; text-shadow: 2px 2px 0 #000; min-height: 14px; letter-spacing: 1px;}
+/* ── 카드 ── */
+.card{background:rgba(15,8,4,.9);border:2px solid var(--border);padding:20px;margin-bottom:14px;overflow:hidden;width:100%}
+.card-title{font-family:var(--pixel);font-size:7px;color:var(--orange);letter-spacing:2px;margin-bottom:14px;text-transform:uppercase}
+.required{color:var(--orange2)}
 
-.nickname-row{display:flex;gap:12px;flex-wrap:wrap}
-.px-select,.px-input{background:var(--bg2);border:2px solid var(--border2);color:var(--text);
-  font-family:var(--mono);font-size:15px;padding:12px 14px;outline:none;appearance:none;transition:border-color .15s}
-.px-select{flex:0 0 180px;cursor:pointer}
-.px-input{flex:1;min-width:140px}
-.px-input::placeholder{color:#8a5a38}
-.px-input:focus,.px-select:focus{border-color:var(--orange2)}
-.nickname-preview{margin-top:12px;font-size:13px;color:var(--muted)}
-.preview-tag{color:var(--orange2);font-weight:bold;font-size:14px;}
-.prompt-preview{font-size:16px;line-height:2;color:#d0c8a0;background:rgba(0,0,0,.3);
-  border:1px solid var(--border);padding:16px 20px;margin-bottom:12px; font-weight: bold; letter-spacing: 0.5px; word-break: keep-all; white-space: pre-wrap;}
-.prompt-meta{font-size:12px;color:var(--muted)}
+/* ── 닉네임 / 설정 ── */
+.setup-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.setup-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:12px}
+.px-select,.px-input{width:100%;background:var(--bg2);border:2px solid var(--border2);color:var(--text);
+  font-family:var(--mono);font-size:13px;padding:10px 12px;outline:none;appearance:none;transition:border-color .15s}
+.px-select:focus,.px-input:focus{border-color:var(--orange2)}
+.px-input::placeholder{color:#3a1f08}
+.nickname-preview{margin-top:10px;font-size:12px;color:var(--muted);line-height:1.8}
+.preview-tag{color:var(--orange2);font-weight:bold}
+
+/* ── 픽셀 캐릭터 선택 ── */
+.char-grid{display:grid;grid-template-columns:repeat(8,1fr);gap:6px;margin-top:10px}
+.char-item{background:var(--bg2);border:2px solid var(--border);padding:6px;cursor:pointer;
+  text-align:center;font-size:20px;transition:border-color .15s;aspect-ratio:1}
+.char-item:hover{border-color:var(--orange)}
+.char-item.selected{border-color:var(--orange2);background:rgba(255,122,32,.15)}
+.char-label{font-size:8px;color:var(--muted);margin-top:3px;display:block;font-family:var(--pixel);letter-spacing:0}
+
+/* ── 지문 미리보기 ── */
+.prompt-preview{font-size:13px;line-height:2;color:#d0c8a0;background:rgba(0,0,0,.3);
+  border:1px solid var(--border);padding:12px 14px;margin-bottom:10px}
+.prompt-meta{font-size:11px;color:var(--muted)}
+
+/* ── 탭 ── */
 .tab-row{display:flex;border-bottom:2px solid var(--border);margin-bottom:0}
-.tab{font-family:var(--pixel);font-size:10px;padding:14px 18px;cursor:pointer;color:var(--muted);
+.tab{font-family:var(--pixel);font-size:7px;padding:10px 14px;cursor:pointer;color:var(--muted);
   background:transparent;border:none;border-bottom:2px solid transparent;margin-bottom:-2px;letter-spacing:1px}
 .tab.active{color:var(--orange2);border-bottom-color:var(--orange2)}
-.rank-list{display:flex;flex-direction:column;gap:8px}
-.rank-empty{font-size:13px;color:var(--muted);text-align:center;padding:20px 0}
-.rank-item{display:flex;align-items:center;gap:12px;padding:10px 12px;
+
+/* ── 랭킹 ── */
+.rank-list{display:flex;flex-direction:column;gap:6px}
+.rank-empty{font-size:12px;color:var(--muted);text-align:center;padding:16px 0}
+.rank-item{display:flex;align-items:center;gap:8px;padding:8px 10px;
   background:rgba(30,15,4,.5);border:1px solid transparent;position:relative;overflow:hidden}
 .rank-item.is-me{border-color:var(--orange2);background:rgba(160,80,10,.22)}
-.rank-item.is-me::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--orange2)}
-.rank-num{font-family:var(--pixel);font-size:10px;width:26px;text-align:right;flex-shrink:0}
+.rank-item.is-me::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--orange2)}
+.rank-num{font-family:var(--pixel);font-size:8px;width:22px;text-align:right;flex-shrink:0}
 .rank-num.gold{color:var(--yellow)}.rank-num.silver{color:#c0c0c0}.rank-num.bronze{color:#ff8855}.rank-num.other{color:var(--muted)}
-.rank-avatar{width:26px;height:26px;image-rendering:pixelated;flex-shrink:0;}
-.rank-name{font-size:13px;color:#d0c890;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.rank-bar-wrap{width:120px;flex-shrink:0;height:6px;background:rgba(60,30,8,.5);overflow:hidden}
+.rank-char{font-size:18px;flex-shrink:0;width:24px;text-align:center}
+.rank-info{flex:1;overflow:hidden}
+.rank-name{font-size:11px;color:#d0c890;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rank-class{font-size:10px;color:var(--muted)}
+.rank-bar-wrap{width:80px;flex-shrink:0;height:5px;background:rgba(60,30,8,.5);overflow:hidden}
 .rank-bar{height:100%;background:linear-gradient(90deg,var(--orange),var(--orange2));transition:width .5s}
-.rank-wpm{font-family:var(--pixel);font-size:9px;color:var(--orange2);width:45px;text-align:right;flex-shrink:0;line-height:1.6}
-.map-loading{font-size:13px;color:var(--muted);padding:14px 0}
-.region-list{display:flex;flex-direction:column;gap:10px;margin-top:12px}
-.region-item{display:flex;align-items:center;gap:12px;font-size:13px}
+.rank-wpm{font-family:var(--pixel);font-size:7px;color:var(--orange2);width:36px;text-align:right;flex-shrink:0;line-height:1.6}
+
+/* ── 지도 ── */
+.map-loading{font-size:12px;color:var(--muted);padding:12px 0}
+.region-list{display:flex;flex-direction:column;gap:8px;margin-top:10px}
+.region-item{display:flex;align-items:center;gap:10px;font-size:12px}
 .region-name{width:130px;color:var(--text);flex-shrink:0}
-.region-bar-wrap{flex:1;height:10px;background:rgba(60,30,8,.4);overflow:hidden}
+.region-bar-wrap{flex:1;height:8px;background:rgba(60,30,8,.4);overflow:hidden}
 .region-bar{height:100%;background:var(--cyan);transition:width .6s}
-.region-count{width:45px;text-align:right;color:var(--cyan);font-family:var(--pixel);font-size:9px}
+.region-count{width:40px;text-align:right;color:var(--cyan);font-family:var(--pixel);font-size:7px}
+
+/* ── 버튼 ── */
 .btn-start{display:block;width:100%;background:#c04a10;border:3px solid var(--orange);color:#fff;
-  font-family:var(--pixel);font-size:13px;padding:22px;cursor:pointer;letter-spacing:2px;
-  text-align:center;transition:transform .1s,background .15s;margin-bottom:16px;position:relative}
+  font-family:var(--pixel);font-size:11px;padding:18px;cursor:pointer;letter-spacing:2px;
+  text-align:center;transition:transform .1s,background .15s;margin-bottom:14px}
 .btn-start:hover{background:var(--orange);transform:translateY(-2px)}
 .btn-start:active{transform:translateY(2px)}
-.battle-header{display:flex;justify-content:space-between;align-items:center;padding:20px 0 16px}
-.battle-title{display:flex;flex-direction:column;gap:8px}
-.my-tag{font-size:13px;color:var(--orange2);display:flex;align-items:center;gap:8px;font-weight:bold;}
-.my-tag img {width:20px;height:20px;image-rendering:pixelated;}
-.timer-box{font-family:var(--pixel);font-size:24px;color:var(--orange2);background:var(--bg2);
-  border:2px solid var(--border2);padding:10px 18px;min-width:110px;text-align:center}
+
+/* ── 배틀 ── */
+.battle-header{display:flex;justify-content:space-between;align-items:center;padding:20px 0 14px}
+.battle-player{display:flex;align-items:center;gap:10px}
+.battle-char{font-size:32px}
+.battle-info{display:flex;flex-direction:column;gap:4px}
+.battle-tag{font-size:12px;color:var(--orange2)}
+.battle-class{font-size:10px;color:var(--muted)}
+.timer-box{font-family:var(--pixel);font-size:20px;color:var(--orange2);background:var(--bg2);
+  border:2px solid var(--border2);padding:8px 14px;min-width:90px;text-align:center}
 .timer-box.danger{color:var(--red);animation:timerShake .3s ease-in-out infinite}
 @keyframes timerShake{0%,100%{transform:translateX(0)}25%{transform:translateX(-2px)}75%{transform:translateX(2px)}}
-.progress-container{position:relative; margin-top:30px; margin-bottom:28px;}
-.progress-outer{height:10px;background:rgba(60,30,8,.4);position:relative;overflow:visible;}
-.progress-inner{height:100%;background:linear-gradient(90deg,var(--orange),var(--orange2));width:0%;transition:width .2s}
-.progress-runner{position:absolute;top:-26px;left:0%;width:36px;height:36px;transition:left 0.2s;transform:translateX(-50%);z-index:5;image-rendering:pixelated;}
-.progress-label{position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:10px;color:rgba(255,255,255,.5);font-family:var(--pixel);}
 
-/* 줄바꿈을 자연스럽게 하기 위한 white-space: pre-wrap; 추가 */
-.prompt-text{font-size:20px; line-height:2.0; margin-bottom:20px; min-height:70px; word-break:keep-all; white-space:pre-wrap; letter-spacing: 0.5px;}
-.ch{display:inline}
-.ch.correct{color:var(--green); text-shadow: 0 0 4px rgba(68,255,136,0.3);}
-.ch.wrong{color:var(--red); background:rgba(255,50,50,.25); text-decoration: underline;}
-.ch.cursor{color:#fff;background:var(--orange);animation:cur .65s step-end infinite}
-.ch.pending{color:#a49b87;} 
+/* ── 진행바 ── */
+.progress-outer{height:8px;background:rgba(60,30,8,.4);margin-bottom:16px;position:relative;overflow:hidden}
+.progress-inner{height:100%;background:linear-gradient(90deg,var(--orange),var(--orange2));width:0%;transition:width .2s}
+.progress-label{position:absolute;right:6px;top:50%;transform:translateY(-50%);font-size:9px;color:rgba(255,255,255,.5)}
+
+/* ── 지문 ── */
+.prompt-text{font-size:15px;line-height:2.4;margin-bottom:16px;word-break:break-all;white-space:normal;overflow-wrap:anywhere;width:100%;display:block;letter-spacing:.3px;max-height:200px;overflow-y:auto}
+.ch{display:inline;word-break:break-all}
+.ch.correct{color:var(--green)}
+.ch.wrong{color:var(--red);background:rgba(255,50,50,.15)}
+.ch.cursor{background:var(--orange);color:#fff;animation:cur .65s step-end infinite}
+.ch.pending{color:#a89070}
 @keyframes cur{0%,100%{background:var(--orange)}50%{background:var(--orange2)}}
 
-.type-input{width:100%;margin-bottom:18px;caret-color:var(--orange2);font-size:16px;cursor:text;user-select:text; letter-spacing: 0.5px; padding: 14px;}
-.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
-.stat-box{background:rgba(30,15,4,.8);border:1px solid var(--border);padding:14px 8px;text-align:center}
-.stat-val{display:block;font-family:var(--pixel);font-size:18px;color:var(--orange2);margin-bottom:6px}
-.stat-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px}
-.result-banner{font-family:var(--pixel);font-size:clamp(12px,3vw,16px);color:var(--yellow);
-  border:2px solid var(--yellow);background:rgba(80,60,0,.3);padding:22px;text-align:center;margin:24px 0 16px;line-height:1.9}
-.result-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px}
-.result-box{background:rgba(30,15,4,.8);border:2px solid var(--border2);padding:28px;text-align:center}
-.result-big-val{display:block;font-family:var(--pixel);font-size:32px;color:var(--orange2);margin-bottom:10px}
-.share-card{background:var(--bg2);border:2px solid var(--orange);padding:24px;margin-bottom:16px;text-align:center}
-.share-btn-row{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
-.share-btn{font-family:var(--pixel);font-size:10px;padding:12px 18px;border:2px solid;
-  cursor:pointer;background:transparent;letter-spacing:1px;transition:opacity .15s}
-.share-btn:hover{opacity:.75}
-.share-btn.twitter{color:#1da1f2;border-color:#1da1f2}
-.share-btn.copy{color:var(--cyan);border-color:var(--cyan)}
+/* ── 타이핑 input ── */
+.type-input{width:100%;margin-bottom:14px;caret-color:var(--orange2);font-size:15px;cursor:text}
+
+/* ── 스탯 ── */
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.stat-box{background:rgba(30,15,4,.8);border:1px solid var(--border);padding:10px 6px;text-align:center}
+.stat-val{display:block;font-family:var(--pixel);font-size:16px;color:var(--orange2);margin-bottom:4px}
+.stat-label{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px}
+
+/* ── 실시간 접속자 떠다니는 UI ── */
+#floatingPlayers{position:fixed;inset:0;pointer-events:none;z-index:2;overflow:hidden}
+.float-player{position:absolute;display:flex;flex-direction:column;align-items:center;gap:3px;
+  animation:floatDrift 0s linear infinite;opacity:0.85;pointer-events:none}
+.float-char{font-size:28px;animation:floatBob 2s ease-in-out infinite}
+.float-name{font-family:var(--pixel);font-size:6px;color:var(--orange2);
+  background:rgba(10,8,4,.75);padding:2px 5px;border:1px solid var(--border);
+  white-space:nowrap;max-width:80px;overflow:hidden;text-overflow:ellipsis;text-align:center}
+@keyframes floatBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+@keyframes floatDrift{0%{transform:translateX(0)}100%{transform:translateX(30px)}}
+/* live players 카드 (배틀 화면 안 작은 목록) */
+.live-players{display:flex;flex-wrap:wrap;gap:8px}
+.live-player{display:flex;flex-direction:column;align-items:center;gap:3px;
+  padding:8px 10px;background:rgba(30,15,4,.6);border:1px solid var(--border);min-width:70px}
+.live-player.is-me{border-color:var(--orange2)}
+.live-player-char{font-size:24px}
+.live-player-name{font-size:9px;color:#d0c890;text-align:center;max-width:64px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.live-player-wpm{font-family:var(--pixel);font-size:7px;color:var(--orange2)}
+
+/* ── 결과 ── */
+.result-hero{display:flex;align-items:center;justify-content:center;gap:20px;
+  background:rgba(15,8,4,.9);border:2px solid var(--orange);padding:24px;margin:20px 0 14px;text-align:center}
+.result-char{font-size:64px;line-height:1}
+.result-info{text-align:left}
+.result-rank-badge{font-family:var(--pixel);font-size:20px;color:var(--yellow);margin-bottom:8px}
+.result-name{font-size:16px;color:var(--orange2);margin-bottom:4px}
+.result-class-tag{font-size:12px;color:var(--muted)}
+.result-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+.result-box{background:rgba(30,15,4,.8);border:2px solid var(--border2);padding:20px;text-align:center}
+.result-big-val{display:block;font-family:var(--pixel);font-size:24px;color:var(--orange2);margin-bottom:6px}
+.share-card{background:var(--bg2);border:2px solid var(--orange);padding:20px;margin-bottom:14px;text-align:center}
+.share-btn-row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:14px}
+.share-btn{font-family:var(--pixel);font-size:8px;padding:10px 14px;border:2px solid;
+  cursor:pointer;background:transparent;letter-spacing:1px}
+.share-btn.kakao{color:#f9e000;border-color:#f9e000}
 .share-btn.img{color:var(--yellow);border-color:var(--yellow)}
+
+/* ── 토스트 ── */
 #toast{position:fixed;bottom:40px;left:50%;transform:translateX(-50%);
   background:var(--bg3);border:2px solid var(--orange);color:var(--orange2);
-  font-family:var(--pixel);font-size:11px;padding:14px 24px;z-index:999;
-  opacity:0;pointer-events:none;transition:opacity .3s}
+  font-family:var(--pixel);font-size:9px;padding:12px 20px;z-index:999;
+  opacity:0;pointer-events:none;transition:opacity .3s;white-space:nowrap}
 #toast.show{opacity:1}
 
-@media(max-width: 600px) {
-  .view-toggle { display: none; }
-  .wrapper.mobile-mode { max-width: 100%; border: none; border-radius: 0; margin-top: 0; box-shadow: none; padding-top: 0;}
-  .stats-row{grid-template-columns:repeat(2,1fr)}.rank-bar-wrap{display:none}
+/* ── 키보드 커버 툴팁 ── */
+#coverTooltip{
+  position:fixed;bottom:80px;right:24px;z-index:998;
+  background:#1a1004;border:2px solid var(--orange);
+  padding:14px 18px;max-width:220px;
+  animation:tooltipPop .4s cubic-bezier(.34,1.56,.64,1);
+  pointer-events:none;
+}
+#coverTooltip .tt-key{
+  display:inline-block;background:var(--orange);color:#fff;
+  font-family:var(--pixel);font-size:9px;padding:4px 8px;margin-bottom:8px;
+}
+#coverTooltip .tt-msg{font-size:12px;color:var(--text);line-height:1.7}
+#coverTooltip .tt-sub{font-size:10px;color:var(--muted);margin-top:4px}
+@keyframes tooltipPop{
+  0%{opacity:0;transform:translateY(12px) scale(.95)}
+  100%{opacity:1;transform:translateY(0) scale(1)}
+}
+
+/* ── 키보드 커버 (Word 위장 화면) ── */
+#keyboardCover{
+  display:none;
+  position:fixed;inset:0;z-index:9000;
+  background:#f2f2f2;
+  overflow:auto;
+  font-family:'Malgun Gothic','맑은 고딕','Apple SD Gothic Neo',sans-serif;
+}
+#keyboardCover .word-toolbar{
+  background:#2b579a;height:44px;display:flex;align-items:center;
+  padding:0 16px;gap:16px;position:sticky;top:0;z-index:1;
+}
+#keyboardCover .word-toolbar-title{
+  color:#fff;font-size:13px;font-weight:500;flex:1;text-align:center;
+}
+#keyboardCover .word-tabs{
+  background:#1e3f7a;height:30px;display:flex;align-items:center;
+  padding:0 8px;gap:2px;
+}
+#keyboardCover .word-tab{
+  color:#ccd6f0;font-size:12px;padding:4px 12px;cursor:default;
+}
+#keyboardCover .word-tab.active{
+  background:#f2f2f2;color:#1e3f7a;font-weight:500;
+}
+#keyboardCover .word-ribbon{
+  background:#fff;border-bottom:1px solid #d0d0d0;
+  padding:6px 16px;display:flex;gap:24px;align-items:center;height:56px;
+}
+#keyboardCover .word-ribbon-group{
+  display:flex;flex-direction:column;align-items:center;gap:2px;
+  font-size:11px;color:#444;cursor:default;
+}
+#keyboardCover .word-ribbon-icon{font-size:18px;}
+#keyboardCover .word-page{
+  max-width:760px;margin:24px auto;background:#fff;
+  box-shadow:0 2px 12px rgba(0,0,0,.18);
+  padding:72px 96px;min-height:900px;
+  position:relative;
+}
+#keyboardCover .word-content{
+  font-size:14px;color:#222;line-height:1.9;
+}
+#keyboardCover .word-content h2{
+  font-size:18px;font-weight:700;margin-bottom:16px;color:#1a1a2e;
+}
+#keyboardCover .word-content p{
+  margin-bottom:12px;text-indent:1em;color:#333;
+}
+#keyboardCover .word-content .highlight{
+  background:#fff2cc;padding:0 2px;
+}
+#keyboardCover .word-status{
+  position:fixed;bottom:0;left:0;right:0;
+  background:#2b579a;color:#ccd6f0;font-size:11px;
+  padding:4px 16px;display:flex;gap:24px;
+}
+#keyboardCover .esc-hint{
+  position:fixed;bottom:8px;right:16px;
+  font-size:11px;color:rgba(255,255,255,.4);
+  font-family:var(--pixel);letter-spacing:1px;
 }
 </style>
 </head>
 <body>
+
+<!-- 모바일 차단 -->
+<div id="mobileBlock">
+  <div class="icon">🖥️</div>
+  <div class="msg">PC 전용 서비스입니다</div>
+  <div class="sub">땡땡이닷컴은 키보드가 있는<br>데스크톱 / 노트북에서만 이용 가능합니다.<br><br>수업 중에 노트북 펴고 접속하세요 💻</div>
+</div>
+
+<div id="app">
 <div class="pixel-bg"></div>
 <canvas id="starCanvas"></canvas>
+<div class="moon"></div>
 <div class="city-skyline" id="skyline"></div>
 <div id="toast"></div>
 
-<!-- 화면 뷰 전환 토글 (데스크탑에서만 표시) -->
-<div class="view-toggle">
-  <button id="btn-desktop" class="view-btn active" onclick="setViewMode('desktop')">💻 PC</button>
-  <button id="btn-mobile" class="view-btn" onclick="setViewMode('mobile')">📱 모바일</button>
+<!-- 키보드 커버 툴팁 (배틀 시작 시 1회 표시) -->
+<div id="coverTooltip" style="display:none">
+  <div class="tt-key">ESC</div>
+  <div class="tt-msg">🚨 교수님이 보면<br>ESC 누르세요!</div>
+  <div class="tt-sub">다시 ESC 누르면 게임으로 복귀</div>
 </div>
 
-<div class="wrapper" id="mainWrapper">
+<!-- Word 위장 커버 화면 -->
+<div id="keyboardCover">
+  <div class="word-toolbar">
+    <span style="color:#fff;font-size:18px">W</span>
+    <span class="word-toolbar-title" id="coverTitle">필기노트.docx - Word</span>
+  </div>
+  <div class="word-tabs">
+    <span class="word-tab active">홈</span>
+    <span class="word-tab">삽입</span>
+    <span class="word-tab">디자인</span>
+    <span class="word-tab">레이아웃</span>
+    <span class="word-tab">참조</span>
+    <span class="word-tab">검토</span>
+    <span class="word-tab">보기</span>
+  </div>
+  <div class="word-ribbon">
+    <div class="word-ribbon-group"><span class="word-ribbon-icon">📋</span>붙여넣기</div>
+    <div class="word-ribbon-group"><span class="word-ribbon-icon">✂️</span>잘라내기</div>
+    <div class="word-ribbon-group"><span class="word-ribbon-icon">📄</span>복사</div>
+    <div style="width:1px;background:#ddd;height:40px;margin:0 8px"></div>
+    <div class="word-ribbon-group"><span class="word-ribbon-icon">B</span><b>굵게</b></div>
+    <div class="word-ribbon-group"><span class="word-ribbon-icon"><i>I</i></span>기울임</div>
+    <div class="word-ribbon-group"><span class="word-ribbon-icon" style="text-decoration:underline">U</span>밑줄</div>
+    <div style="width:1px;background:#ddd;height:40px;margin:0 8px"></div>
+    <div class="word-ribbon-group"><span class="word-ribbon-icon">☰</span>단락</div>
+    <div class="word-ribbon-group"><span class="word-ribbon-icon">🔍</span>찾기</div>
+  </div>
+  <div class="word-page">
+    <div class="word-content" id="coverContent"></div>
+  </div>
+  <div class="word-status">
+    <span>페이지 1 / 3</span>
+    <span>단어 수: 847</span>
+    <span>한국어</span>
+    <span style="margin-left:auto">100%</span>
+  </div>
+  <div class="esc-hint">ESC — 돌아가기</div>
+</div>
 
-  <!-- LOBBY -->
+<div class="wrapper">
+
+  <!-- ══ LOBBY ══ -->
   <div class="phase active" id="phaseLobby">
     <header class="header">
-      <div class="logo">🏫 땡땡이닷컴</div>
+      <div class="logo">🎮 땡땡이닷컴</div>
       <div class="logo-sub">CLASS ESCAPE TYPING BATTLE</div>
       <div class="live-bar">
         <div class="live-dot"></div>
@@ -193,13 +366,32 @@ body{background:var(--bg);color:var(--text);font-family:var(--mono);min-height:1
     </header>
 
     <div class="card">
-      <div class="card-title">▶ 아바타 & 닉네임 설정 <span class="required">(필수)</span></div>
-      
-      <!-- 아바타 선택 -->
-      <div class="avatar-row" id="avatarContainer"></div>
-      <div class="avatar-name-display" id="avatarNameDisplay">컴공오리</div>
+      <div class="card-title">▶ 플레이어 설정 <span class="required">(필수)</span></div>
 
-      <div class="nickname-row">
+      <div class="setup-grid-3">
+        <select class="px-select" id="schoolSelect" onchange="onSchoolChange()">
+          <option value="">학교 선택</option>
+          <option value="ewha">이화여자대학교</option>
+          <option value="other">다른 학교</option>
+        </select>
+        <select class="px-select" id="collegeSelect" style="display:none" onchange="onCollegeChange()">
+          <option value="">단과대 선택</option>
+          <option>간호대학</option>
+          <option>경영대학</option>
+          <option>공과대학</option>
+          <option>사범대학</option>
+          <option>사회과학대학</option>
+          <option>스크랜튼대학</option>
+          <option>식품영양학대학</option>
+          <option>약학대학</option>
+          <option>음악대학</option>
+          <option>의과대학</option>
+          <option>인문과학대학</option>
+          <option>자연과학대학</option>
+          <option>조형예술대학</option>
+          <option>체육과학부</option>
+          <option>호크마교양대학</option>
+        </select>
         <select class="px-select" id="classSelect">
           <option value="">수업 선택</option>
           <option>경영학원론</option><option>미시경제학</option><option>운영체제론</option>
@@ -207,30 +399,43 @@ body{background:var(--bg);color:var(--text);font-family:var(--mono);min-height:1
           <option>철학의이해</option><option>선형대수학</option><option>회계원리</option>
           <option>통계학</option><option>영어회화</option><option>기타수업</option>
         </select>
-        <input class="px-input" id="nicknameInput" type="text" maxlength="10" placeholder="닉네임 (최대 10자)">
       </div>
-      <div class="nickname-preview">→ 배틀 태그: <span id="previewTag" class="preview-tag">[수업선택] 땡땡이</span></div>
+
+      <input class="px-input" id="nicknameInput" type="text" maxlength="10"
+        placeholder="닉네임 입력 (최대 10자)" style="margin-bottom:12px">
+
+      <div class="card-title" style="margin-bottom:8px">▶ 캐릭터 선택</div>
+      <div class="char-grid" id="charGrid"></div>
+
+      <div class="nickname-preview" style="margin-top:12px">
+        → 배틀 태그: <span id="previewTag" class="preview-tag">[설정완료시 표시]</span>
+      </div>
     </div>
 
     <div class="card">
       <div class="card-title">▶ 오늘의 지문 미리보기</div>
       <div class="prompt-preview" id="promptPreview">로딩 중...</div>
-      <div class="prompt-meta"><span id="promptIndex">-</span>번째 지문 &nbsp;|&nbsp; 매 배틀마다 랜덤 변경</div>
+      <div class="prompt-meta"><span id="promptIndex">-</span>번째 지문 &nbsp;|&nbsp; 매 배틀마다 랜덤</div>
     </div>
 
     <div class="tab-row">
-      <button class="tab active" onclick="switchLobbyTab(0)">실시간 순위</button>
-      <button class="tab" onclick="switchLobbyTab(1)">🗺 땡땡이 지도</button>
+      <button class="tab active" onclick="switchLobbyTab(0)">🏆 실시간 순위</button>
+      <button class="tab" onclick="switchLobbyTab(1)">🏫 단과대 순위</button>
+      <button class="tab" onclick="switchLobbyTab(2)">🗺 땡땡이 지도</button>
     </div>
+
     <div id="lobbyTab0">
-      <div class="card">
-        <div class="card-title">▶ 오늘의 랭킹</div>
+      <div class="card"><div class="card-title">▶ 오늘 전체 랭킹</div>
         <div class="rank-list" id="lobbyRankList"><div class="rank-empty">첫 번째 배틀러가 되세요!</div></div>
       </div>
     </div>
     <div id="lobbyTab1" style="display:none">
-      <div class="card">
-        <div class="card-title">▶ 지금 땡땡이 중인 지역</div>
+      <div class="card"><div class="card-title">▶ 단과대별 평균 WPM (이화여대)</div>
+        <div class="rank-list" id="collegeRankList"><div class="rank-empty">데이터 로딩 중...</div></div>
+      </div>
+    </div>
+    <div id="lobbyTab2" style="display:none">
+      <div class="card"><div class="card-title">▶ 지금 땡땡이 중인 지역</div>
         <div class="map-loading" id="mapLoading">📡 위치 데이터 불러오는 중...</div>
         <div class="region-list" id="regionList"></div>
       </div>
@@ -239,178 +444,234 @@ body{background:var(--bg);color:var(--text);font-family:var(--mono);min-height:1
     <button class="btn-start" onclick="startBattle()">▶ PRESS START — 배틀 입장</button>
   </div>
 
-  <!-- BATTLE -->
+  <!-- ══ BATTLE ══ -->
   <div class="phase" id="phaseBattle">
     <div class="battle-header">
-      <div class="battle-title">
-        <div class="card-title" style="margin:0">⚔ 타자 배틀 중</div>
-        <div class="my-tag" id="battleMyTag"><img id="battleMyAvatar" src=""> <span id="battleMyName"></span></div>
-      </div>
-      <div class="timer-box" id="timerDisplay">01:00</div>
-    </div>
-    <div class="card">
-      <!-- 트랙 & 달리기 아바타 -->
-      <div class="progress-container">
-        <div class="progress-outer">
-          <div class="progress-inner" id="progressBar"></div>
-          <img class="progress-runner" id="progressRunner" src="">
-          <div class="progress-label" id="progressLabel">0%</div>
+      <div class="battle-player">
+        <div class="battle-char" id="battleChar">🎮</div>
+        <div class="battle-info">
+          <div class="battle-tag" id="battleTag"></div>
+          <div class="battle-class" id="battleClass"></div>
         </div>
       </div>
+      <div class="timer-box" id="timerDisplay">01:30</div>
+    </div>
+
+    <div class="card">
+      <div class="progress-outer">
+        <div class="progress-inner" id="progressBar"></div>
+        <div class="progress-label" id="progressLabel">0%</div>
+      </div>
       <div class="prompt-text" id="promptDisplay"></div>
-      <input class="px-input type-input" id="typeInput" type="text" placeholder="클릭하면 타이핑 시작! 👆"
-        autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
-        onclick="attachTypingIfNeeded(this)">
+      <input class="px-input type-input" id="typeInput" type="text"
+        placeholder="여기 클릭 후 타이핑 시작!"
+        autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
       <div class="stats-row">
-        <div class="stat-box"><span class="stat-val" id="statWpm">0</span><span class="stat-label">WPM</span></div>
+        <div class="stat-box"><span class="stat-val" id="statWpm">0</span><span class="stat-label">타수/분</span></div>
         <div class="stat-box"><span class="stat-val" id="statAcc">100</span><span class="stat-label">정확도%</span></div>
         <div class="stat-box"><span class="stat-val" id="statRank">-</span><span class="stat-label">내 순위</span></div>
         <div class="stat-box"><span class="stat-val" id="statCombo">0</span><span class="stat-label">콤보🔥</span></div>
       </div>
     </div>
+
     <div class="card">
-      <div class="card-title">▶ 실시간 순위판</div>
-      <div class="rank-list" id="battleRankList"><div class="rank-empty">상대방 연결 대기 중...</div></div>
+      <div class="card-title">▶ 지금 같이 땡땡이 중 <span style="color:var(--red);font-size:8px">● LIVE</span></div>
+      <div class="live-players" id="livePlayers">
+        <div class="rank-empty">상대방 연결 대기 중...</div>
+      </div>
     </div>
   </div>
+  <!-- 배틀 화면에서만 보이는 둥둥 캐릭터 -->
+  <div id="floatingPlayers"></div>
 
-  <!-- RESULT -->
+  <!-- ══ RESULT ══ -->
   <div class="phase" id="phaseResult">
-    <div class="result-banner" id="resultBanner">🎉 배틀 종료!</div>
+    <div class="result-hero">
+      <div class="result-char" id="resChar">🎮</div>
+      <div class="result-info">
+        <div class="result-rank-badge" id="resBadge">🎉 배틀 종료!</div>
+        <div class="result-name" id="resName"></div>
+        <div class="result-class-tag" id="resClassTag"></div>
+      </div>
+    </div>
+
     <div class="result-grid">
-      <div class="result-box"><span class="result-big-val" id="resWpm">0</span><span class="stat-label">WPM</span></div>
+      <div class="result-box"><span class="result-big-val" id="resWpm">0</span><span class="stat-label">타수/분 (WPM)</span></div>
       <div class="result-box"><span class="result-big-val" id="resAcc">0%</span><span class="stat-label">정확도</span></div>
       <div class="result-box"><span class="result-big-val" id="resCombo">0</span><span class="stat-label">최대 콤보</span></div>
-      <div class="result-box"><span class="result-big-val" id="resPrompt">-</span><span class="stat-label">지문</span></div>
     </div>
+
     <div class="share-card">
       <div class="card-title" style="margin-bottom:12px">▶ 결과 공유하기</div>
-      <canvas id="shareCanvas" style="max-width:100%;border:1px solid var(--border);margin-bottom:14px;display:block;margin-left:auto;margin-right:auto"></canvas>
+      <canvas id="shareCanvas" style="max-width:100%;border:1px solid var(--border);display:block;margin:0 auto"></canvas>
       <div class="share-btn-row">
-        <button class="share-btn twitter" onclick="shareTwitter()">🐦 트위터 공유</button>
-        <button class="share-btn copy" onclick="copyShareLink()">🔗 링크 복사</button>
+        <button class="share-btn kakao" onclick="shareKakao()">💬 카카오톡 공유</button>
         <button class="share-btn img" onclick="downloadShareImage()">💾 이미지 저장</button>
       </div>
     </div>
+
     <div class="card">
       <div class="card-title">▶ 오늘 최종 순위</div>
-      <div class="rank-list" id="resultRankList"><div class="rank-empty">랭킹 불러오는 중...</div></div>
+      <div class="rank-list" id="resultRankList"><div class="rank-empty">로딩 중...</div></div>
     </div>
+
     <button class="btn-start" onclick="backToLobby()">↩ 다시 도전하기</button>
   </div>
 
-</div><!-- /wrapper -->
+</div></div><!-- /wrapper /app -->
 
-<!-- Firebase SDK -->
+<!-- 카카오 SDK -->
+<script src="https://t1.kakaocdn.net/kakao_js_sdk/2.1.0/kakao.min.js" crossorigin="anonymous"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
+// ═══ FIREBASE CONFIG — 여기 교체 ═══
 const firebaseConfig = {
-  apiKey: "AIzaSyAwKn8FmkXIOTB4i8N6fVBzQHyyd56X1iE",
-  authDomain: "realtime-181b4.firebaseapp.com",
-  databaseURL: "https://realtime-181b4-default-rtdb.firebaseio.com",
-  projectId: "realtime-181b4",
-  storageBucket: "realtime-181b4.firebasestorage.app",
-  messagingSenderId: "542084372146",
-  appId: "1:542084372146:web:d6f990ea4e02e86c10dbab"
+  apiKey:            "YOUR_API_KEY",
+  authDomain:        "YOUR_PROJECT_ID.firebaseapp.com",
+  databaseURL:       "https://YOUR_PROJECT_ID-default-rtdb.firebaseio.com",
+  projectId:         "YOUR_PROJECT_ID",
+  storageBucket:     "YOUR_PROJECT_ID.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId:             "YOUR_APP_ID",
 };
-</script>
-<script>
 
-// ── 기기 선택 토글 ────────────────────────────────
-function setViewMode(mode) {
-  const wrapper = document.getElementById('mainWrapper');
-  const btnDesktop = document.getElementById('btn-desktop');
-  const btnMobile = document.getElementById('btn-mobile');
-
-  if (mode === 'mobile') {
-    wrapper.classList.add('mobile-mode');
-    btnMobile.classList.add('active');
-    btnDesktop.classList.remove('active');
-  } else {
-    wrapper.classList.remove('mobile-mode');
-    btnDesktop.classList.add('active');
-    btnMobile.classList.remove('active');
-  }
-}
-
-// ── 픽셀 아트 아바타 생성기 (SVG Base64) ───────────────
-const AVATAR_NAMES = ["컴공오리", "지박령", "과탑안경", "학교냥이", "복학생"];
-const AVATAR_PALS = {
-  'K': '#0a0a14', 'W': '#FFFFFF', 'O': '#FFA500', 'R': '#FF4455',
-  'S': '#FFDAB9', 'H': '#3a2010', 'G': '#44FF88', 'B': '#44FFCC', 'P': '#FFCC00'
-};
-const AVATAR_DATA = [
-  ["            ","    KKKK    ","   KWKWWK   ","   KOOWWK   ","   KOKKK    ","  KKWWWWK   "," KWWWWWWWK  "," KWWWWWWWK  ","  KWWWWWK   ","   KOKOK    ","            ","            "],
-  ["            ","   KKKKKK   ","  KWWWWWWK  "," KWWKWWKWWK "," KWWWWWWWWK "," KWWKWWKWWK "," KWWRRRRWWK "," KWWWWWWWWK "," KWWKWWKWWK ","  KK KK KK  ","            ","            "],
-  ["            ","   HHHHHH   ","  HSSSSSSH  ","  KSWKKSWK  ","  KKWKKKWK  ","  SSSSSSSS  ","   SSSSSS   ","  KKKKKKKK  ","  KWWWWWWK  ","   KK  KK   ","            ","            "],
-  ["            ","  K K  K K  ","  KGGKKGGK  "," KGGGGGGGGK "," KGKGWWGKGK "," KGGKKKKGGK "," KGGGGGGGGK ","  KGGGGGGK  ","   KKKKKK   ","            ","            ","            "],
-  ["            ","  PPPPPPPP  "," KPPPPPPPPK ","  HSSSSSSH  ","  KKSKKSKS  ","  SSSSSSSS  ","   SSSSSS   ","  KBKBBKBK  ","  KBBBBBBK  ","   KK  KK   ","            ","            "]
+// ═══ 픽셀 캐릭터 16종 ═══
+var CHARS = [
+  {id:"cat",   e:"🐱", label:"고양이"},
+  {id:"dog",   e:"🐶", label:"강아지"},
+  {id:"frog",  e:"🐸", label:"개구리"},
+  {id:"chick", e:"🐥", label:"병아리"},
+  {id:"ghost", e:"👻", label:"유령"},
+  {id:"alien", e:"👾", label:"외계인"},
+  {id:"robot", e:"🤖", label:"로봇"},
+  {id:"ninja", e:"🥷", label:"닌자"},
+  {id:"witch", e:"🧙", label:"마법사"},
+  {id:"dino",  e:"🦕", label:"공룡"},
+  {id:"panda", e:"🐼", label:"판다"},
+  {id:"fox",   e:"🦊", label:"여우"},
+  {id:"pig",   e:"🐷", label:"돼지"},
+  {id:"bear",  e:"🐻", label:"곰"},
+  {id:"octo",  e:"🐙", label:"문어"},
+  {id:"duck",  e:"🦆", label:"오리"},
 ];
 
-const AVATAR_SVGS = AVATAR_DATA.map(data => {
-  let svg = `<svg viewBox="0 0 12 12" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges">`;
-  for(let y=0; y<12; y++){
-    for(let x=0; x<12; x++){
-      let c = data[y][x];
-      if(c && c !== ' ') svg += `<rect x="${x}" y="${y}" width="1" height="1" fill="${AVATAR_PALS[c]}"/>`;
-    }
-  }
-  svg += `</svg>`;
-  return "data:image/svg+xml;base64," + btoa(svg);
-});
 
-// ── 트렌디한 최신 지문 (길이 확장) ────────────────────────
-const PROMPTS = [
-  "과제가 3개나 겹쳐서 밤을 새워야 할 판이지만, 덕분에 내 타자 실력이 일취월장하고 있다니. 긍정적으로 생각하면 이거 완전 럭키비키잖아! 오늘 밤도 키보드와 혼연일체가 되어 낭만 있게 불태워보자.",
-  "숏폼 도파민에 잔뜩 절여진 내 뇌를 깨우기 위해 오늘도 미친 듯이 타자를 친다. 솔직히 1분이 넘어가는 교수님의 롱폼 강의는 이제 도저히 집중할 수가 없다. 내 집중력의 한계는 딱 여기까지인 것 같다.",
-  "인공지능이 내 과제도 대신 해주고 복잡한 코딩도 순식간에 짜주는 최첨단 AI 시대에 살고 있다. 그런데 나는 대체 왜 여기서 아날로그 감성으로 키보드를 두드리고 있는가. 묘한 현타가 오지만 타자 배틀은 못 참지.",
-  "우리 교수님 MBTI는 검사해보나 마나 분명히 피도 눈물도 없는 극 'T' 성향일 것이다. 이번 기말고사 시험 범위 공지를 보면 인간적인 따뜻함이라고는 눈을 씻고 찾아봐도 도저히 느낄 수가 없다.",
-  "비대면 줌 수업 시절, 카메라와 마이크를 몰래 끄고 따뜻한 전기장판 위에서 귤 까먹던 그 겨울이 사무치게 그립다. 다시 그 시절로 돌아간다면 출석 체크 대답만큼은 누구보다 우렁차게 할 자신이 있는데 말이다.",
-  "매운 마라탕에 꿔바로우를 잔뜩 먹고 후식으로 달콤한 요아정까지 완벽하게 조지는 갓벽한 상상을 해본다. 이 지루하고 끝이 안 보이는 수업 시간을 버티게 해주는 유일한 원동력은 바로 끝나고 먹을 저녁 메뉴뿐이다.",
-  "제로 콜라부터 제로 사이다까지 온갖 제로 슈거 열풍이 불어닥친 시대에 발맞춰 살아가고 있다. 그래서인지 내 이번 학기 학점도 트렌디하게 0점을 향해 무한히 수렴하고 있는 중이다. 눈물이 앞을 가린다.",
-  "겉으로는 교수님과 눈을 맞추며 끄덕이고 있지만, 속으로는 몰래 앱테크를 켜서 포인트를 영혼까지 끌어모으고 있다. 너도 혼자 멍때리지 말고 얼른 땡땡이닷컴에 접속해서 나랑 숨 막히는 타자 배틀이나 한판 하자.",
-  "알 수 없는 유튜브 알고리즘이 나를 이 치열한 타자 배틀의 현장으로 친절하게 이끌어 주었다. 앞에서 열창하시는 교수님의 목소리는 이미 나에게 잔잔하고 평화로운 ASMR 백색소음이 되어버린 지 오래다.",
-  "가즈아를 외치며 떡상할 밈코인을 찾기 위해 오늘도 매의 눈으로 모니터를 뚫어지게 노려본다. 솔직히 말해서 언젠가 휴지조각이 될지도 모르는 대학 졸업장보다 내 코인 계좌의 붉은 수익률이 훨씬 더 소중하다."
+var COLLEGE_CLASSES = {
+  "간호대학": ["간호미생물학","간호정보와기술","간호창업과경영","간호학연구","기본간호학Ⅰ","모성건강간호학Ⅰ","보건의료법","보건의료정책","성인건강간호학Ⅰ","성인건강간호학Ⅲ","세계보건의료와간호전문직","아동건강간호학Ⅱ","의사소통과협력관계","인간성장과발달","인체구조와생리Ⅰ","전문직과자기개발","정신건강간호학Ⅰ","지역사회건강간호학Ⅰ","통합적간호중재","Global Nursing Issues","Health Assessment","Health Assessment Practicum","Introduction of Global Health"],
+  "경영대학": ["AI와비즈니스애플리케이션","Business Project Planning & Management-캡스톤디자인","CampusCEO창업과고객개발","MICE Contents Design-캡스톤디자인","개인금융","거시경제이론","경영리더십","경영시뮬레이션","경영의사결정론","경영정보시스템","경영통계학","경제사","경제수학","경제원론","경제정책분석","경제통계학","경제학세미나","계량경제학","고급세무회계","국제경영학","국제금융론","국제무역론","국제사무학원론","글로벌커리어개발과기업가정신","금융경제학"],
+  "공과대학": ["4차산업혁명과창의융합SW","AI리빙랩Ⅱ","AI응용수학","C++기초프로그래밍","JAVA프로그래밍및실습Ⅰ","SW리더십과기업가정신세미나","가상현실","강구조및설계","건축공학수학","건축구조의이해","건축기계설비시스템","건축도시시스템공학개론","건축도시시스템공학기초설계","건축도시시스템종합설계","건축도시정보모델링및활용","건축사1","건축사업비관리","건축설계1","건축설계3","건축설계5","건축설계7(종합설계)","건축실무및취창업","건축열·공기환경계획","건축재료","건축제도와정책"],
+  "사범대학": ["AI·디지털리터러시","AI기반첨단화학기술특론","GIS기초","경제현상의이해","고급대기과학및실험Ⅰ","고급무기화학","고급유기화학","고급지구과학실습","고급지질학및실험Ⅰ","고급현대물리","고전산문교육론","공간통계","교사를위한조선시대사","교수설계","교육공학HRD세미나","교육과정","교육문법의이해","교육방법및교육공학","교육사회","교육심리","교육의심리적기초","교육철학및교육사","교육철학탐구","교육커뮤니케이션의이해와실제","교육테크놀로지"],
+  "사회과학대학": ["AI미디어데이터사이언스입문","PR커뮤니케이션","가족복지론","감정과심리의사회학","경기기록및전력분석","공공커뮤니케이션","광고PR디지털에널리틱스","광고심리학","광고카피라이팅","광고캠페인","국가정보론","국제광고PR","국제기구와북한","국제정치경제","글로컬시대의아시아여성","금융소비자보호론","기구필라테스","기사작성기초","기초심리통계","노동과젠더","다큐멘터리제작","대중문화연구","데이터과학적사고와사회문제해결과정","미국정치","미디어글쓰기와스피치"],
+  "스크랜튼대학": ["AI+콘텐츠코딩","UI디자인","가상현실콘텐츠","게임스토리텔링","과학과문명","독립연구","디지털미디어디자인","디지털스토리텔링개론","디지털스토리텔링의이해","리더를위한과학과인공지능","메이커스워크샵","사고력과글쓰기","사회과학연구방법론","웹콘텐츠개발","융합콘텐츠와디자인","융합콘텐츠캡스톤디자인Ⅰ","이터레이티브디자인","창의적융합연구Ⅱ","창의적융합연구Ⅳ","추론과논증의이해","컴퓨팅적사고와프로그래밍","콘텐츠아키텍처링","크리에이티브라이팅","Content Prototyping","Critical Thinking and Moral Theories"],
+  "식품영양학대학": ["공공도서관","기록관리학의이해","문헌정보학의이해","부모교육","비주얼머천다이징","생애주기영양학","생화학","서양조리실습","서지학의이해","스타일드로잉","식품과현대사회","식품위생및법규","식품화학","아동/청소년자료","영양정보관리및상담실습","영양판정및실험","영양학","외식과현대사회","외식산업과다량조리","의류산업과패션","의류소재이해","의류소재평가","인터랙션디자인의이해","정보검색과검색엔진","정보서비스"],
+  "약학대학": ["동물의약품","문헌평가및임상연구디자인","물리약학Ⅰ","바이오의약품Ⅰ","병태생리학","분자생물학","생물약제학","암생물학","약리학Ⅰ","약물역학","약물전달학","약물치료학Ⅰ","약물치료학Ⅱ","약사와사회","약전학및품질과학Ⅰ","약품기기분석학","약품미생물학Ⅰ","약품생화학Ⅰ","약품유기Ⅰ","약품합성학Ⅰ","약학개론","약학실습Ⅰ","약학실습Ⅱ","약학실습Ⅲ","약학실습Ⅳ"],
+  "음악대학": ["20세기음악Ⅰ","20세기음악분석Ⅰ","20세기음악양식Ⅰ","건반악기문헌Ⅰ","건반악기문헌Ⅲ","건반화성Ⅰ","관악합주Ⅰ","관악합주Ⅲ","관악합주Ⅴ","관악합주Ⅶ","관합주Ⅰ","관합주Ⅲ","관합주Ⅴ","관합주Ⅶ","관현악Ⅰ","관현악Ⅲ","관현악Ⅴ","관현악Ⅶ","관현악문헌","관현악법Ⅰ","교양합창","국악교육론","국악의이해","그룹피아노교수법Ⅰ","대위Ⅰ"],
+  "의과대학": ["건강웰니스과학의이해","국제보건","논리적사고와글쓰기","보건교육과건강증진","보건의료데이터베이스(캡스톤디자인)","보건의료법규","보건학의이해","보건행정및정책","분자세포생물학Ⅰ","비판적의사소통","역학조사(캡스톤디자인)","유기화학","의과학의현재와미래","의료보장론","의학의철학과역사","인간행동의이해","인체해부생리학","일반화학","정신보건","조사방법론","화학실험"],
+  "인문과학대학": ["(유학생을위한)보고서와논문쓰기","21세기사회와문학의대화","SF문학의이해","국어교과교육론","국어교과논리및논술","국제사회속의프랑스","그림과글로만나는우리고전","그림속한국역사문화읽기","근대중국의개혁과혁명","기독교교육커리큘럼","기독교와세계","기독교윤리와사회문제","기본독일어","기본일본어","기본중국어","기본프랑스어","논리와사고","논리와컴퓨터","도시⋅공간문화로읽는한국사","독문법기초","독일고전영화","독일도시와인문학","독일어권문학의이해","독일어권문화의이해","독일어여행"],
+  "자연과학대학": ["21C바이오산업","계산과학알고리즘","고급생명과학실험캡스톤디자인Ⅰ","고분자화학Ⅰ","고체물리학","과학교과교육론","과학교과논리및논술","과학교육과정과평가","과학사와융합교육","기능적신경해부학","기초확률론","뇌-기계인터페이스","뇌과학의발견","뇌인지과학실험실습Ⅰ","뇌인지과학응용","다변량분석및실습","다변수미분적분학","동물다양성","동물생리학Ⅰ","무기화학","무기화학Ⅰ","물리및분석화학실험","물리화학II","물리화학Ⅰ","물리화학Ⅲ"],
+  "조형예술대학": ["AI기반디지털트윈공간디자인","K-문화와공간","UX디자인졸업연구Ⅰ","공간디자인과재료","공간디자인스튜디오Ⅰ","공간디자인스튜디오Ⅲ","공간설치","공간조명디자인","공예교과논리및논술","구성조각","그래픽디자인졸업연구Ⅰ","기초자수","내러티브디자인","도예조소Ⅰ","도자공예Ⅰ","도자와공간Ⅰ","도자재료Ⅰ","동시대미술론","동양미학의전개","드로잉워크샵Ⅰ","디자인리서치","디자인스튜디오(캡스톤디자인)Ⅲ","디자인아트졸업연구Ⅰ","디지털그래픽스Ⅰ","디지털드로잉Ⅰ"],
+  "체육과학부": ["골프","농구","뉴스포츠","수영","스포츠과학의이해","스포츠사회학","스포츠산업의이해","스포츠카운슬링","운동발달","운동생리학","운동역학및실습","운동프로그램개발(캡스톤디자인)","운동학습원리및적용","움직임을통한감정코칭","육상","장애인스포츠론","체육교과교육론","체육교과논리및논술","코칭론","테니스","퍼스널트레이닝(P.T.)","호신의이론과실제"],
+  "호크마교양대학": ["K-컬처로읽는한국옛이야기와정서","국가안보론","글로벌호크마세미나1:이화첫걸음","기본러시아어","기본스페인어","나눔과공존의리더십","나눔커뮤니티가드닝","대중문화속생활한국어탐색","라틴어입문","리더십","무기체계론","북한학","전쟁사","중급스페인어","통합적사고와글쓰기","플랫폼과미디어리터러시이해","한국어기초의이해","한국어기초표현","한국어발표와토론","한국어쓰기의실제","한국어와소통","한국어와표현","Advanced English","Business and Technical English","Cinema Arts and English"]
+};
+
+// ═══ 지문 ═══
+var PROMPTS = [
+  "오늘 교수님 수업은 정말 흥미롭다고 생각하면서 타이핑하는 척을 하는 학생은 전 세계 어디에도 없다. 그냥 솔직하게 살자. 우리가 여기 앉아 있는 이유는 단 하나, 출석 때문이다. 키보드 소리만이라도 열심히 내보자. 탁탁탁탁. 적어도 소리는 성실하다.",
+  "지금 이 순간 전국 어딘가에서 나와 똑같이 수업을 듣는 척하며 딴짓을 하고 있는 사람이 분명히 있다. 우리는 결코 혼자가 아니다. 연대하라. 우리의 무기는 빠른 손가락과 무표정한 얼굴이다. 교수님이 쳐다봐도 흔들리지 말자. 그냥 고개를 한 번 끄덕여 주면 된다. 탁탁.",
+  "교수님은 지금 열심히 강의하고 계신다. 나는 지금 열심히 타자를 치고 있다. 둘 다 나름 최선을 다하고 있는 것이다. 이것이 바로 공존이다. 서로의 영역을 존중하는 아름다운 강의실 생태계. 교수님은 가르치고 나는 타자 실력을 늘린다. 탁탁탁.",
+  "시험에 나올 것 같지 않은 내용을 47분째 설명하고 계신 교수님께 진심으로 경의를 표한다. 그 열정의 반만 있어도 나는 이미 대학원에 입학했을 것이다. 그런데 솔직히 저 내용이 시험에 나오면 어떡하지. 잠깐 필기해야 하나. 아니다. 어차피 족보 있다. 탁탁탁탁탁.",
+  "수업 중에 타자를 치면 필기하는 것처럼 보인다는 사실을 발견한 사람은 노벨 평화상을 받아야 한다. 덕분에 오늘도 평화롭게 살아가고 있다. 이 발견이 없었다면 나는 지금쯤 책상에 엎드려 자고 있었을 것이다. 그러면 교수님도 기분이 나쁘셨을 테니 결국 모두를 위한 선택이다. 탁탁.",
+  "저는 열심히 수업을 듣고 있습니다. 이 화면에 보이는 것은 정교한 필기 프로그램입니다. 의심하지 마세요. 절대로. 지금 당장 이쪽 화면 보지 마세요 제발. 이 글자들은 수업 내용을 정리하는 중입니다. 분명히. 확실히. 저는 모범생입니다. 탁탁탁탁.",
+  "출석은 했다. 자리도 앉았다. 노트북도 켰다. 심지어 강의 자료도 열었다. 이 정도면 충분히 열심히 한 것 아닌가. 나머지는 내일의 내가 알아서 할 것이다. 내일의 나는 분명히 더 똑똑하고 성실할 것이다. 항상 그래왔다. 파이팅 내일의 나. 오늘의 나는 타자나 친다.",
+  "교수님이 방금 중요하다고 했다. 분명히 들었다. 그런데 무엇이 중요하다고 했는지 기억이 나지 않는다. 타자 치는 데 집중하느라 내용을 놓쳤다. 이것이 바로 멀티태스킹의 한계다. 인간의 뇌는 두 가지를 동시에 완벽히 할 수 없다. 나는 타자를 선택했다. 탁탁탁탁.",
+  "이 수업의 학점은 절대평가다. 즉 남이 잘해도 내 점수에 영향이 없다. 그렇다면 지금 내가 타자 배틀에서 1등을 하는 것이 훨씬 더 의미 있는 일이다. 학점은 나중에 생각하자. 지금은 이 순위판에서 살아남는 것이 목표다. 탁탁탁탁탁탁.",
+  "강의실 에어컨이 너무 춥다. 근데 졸리기도 하다. 이 두 감각이 동시에 오는 것이 인간의 위대한 모순이다. 철학적으로 깊이 고민하는 중이다. 타자도 친다. 춥고 졸린 상태에서도 손가락만은 멈추지 않는다. 이것이 바로 의지력이다. 나는 강하다. 탁탁탁.",
 ];
 
-// ── 상태 ─────────────────────────────────────────
-var db=null,mySessionId=null,myRoomRef=null,battleRoomId=null,rankListener=null;
-var myTag="[수업선택] 땡땡이",myName="땡땡이", myAvatarIdx = 0;
-var currentPrompt="",currentPromptIdx=0;
-var charIndex=0,errors=0,totalTyped=0,myWpm=0,myAcc=100,myCombo=0;
-var timerSec=60,timerInterval=null,battleStartTime=null;
+// ═══ 상태 ═══
+var db=null, mySessionId=null, myRoomRef=null, battleRoomId=null, rankListener=null;
+var myTag="", myName="", myCharEmoji="🎮", myCharId="cat";
+var myCollege="", myClass="", mySchool="";
+var currentPrompt="", currentPromptIdx=0;
+var charIndex=0, errors=0, totalTyped=0, myWpm=0, myAcc=100, myCombo=0;
+var timerSec=90, timerInterval=null, battleStartTime=null;
+var composing=false;
+var selectedCharIdx=0;
 
-// ── 초기화 ────────────────────────────────────────
-function initAvatars() {
-  const container = document.getElementById("avatarContainer");
-  if(!container) return;
-  AVATAR_SVGS.forEach((svg, idx) => {
-    let btn = document.createElement("div");
-    btn.className = "avatar-btn" + (idx === 0 ? " selected" : "");
-    btn.innerHTML = `<img src="${svg}" alt="${AVATAR_NAMES[idx]}">`;
-    btn.onclick = () => selectAvatar(idx);
-    container.appendChild(btn);
+// ═══ 캐릭터 그리드 ═══
+function initCharGrid() {
+  var grid = document.getElementById("charGrid");
+  grid.innerHTML = "";
+  CHARS.forEach(function(c, i) {
+    var div = document.createElement("div");
+    div.className = "char-item" + (i===0?" selected":"");
+    div.innerHTML = '<span style="font-size:22px">' + c.e + '</span><span class="char-label">' + c.label + '</span>';
+    div.onclick = function() {
+      document.querySelectorAll(".char-item").forEach(function(el){el.classList.remove("selected");});
+      div.classList.add("selected");
+      selectedCharIdx = i;
+      myCharEmoji = CHARS[i].e;
+      myCharId = CHARS[i].id;
+      updatePreview();
+    };
+    grid.appendChild(div);
   });
+  myCharEmoji = CHARS[0].e;
+  myCharId = CHARS[0].id;
 }
 
-function selectAvatar(idx) {
-  myAvatarIdx = idx;
-  document.querySelectorAll(".avatar-btn").forEach((b, i) => b.classList.toggle("selected", i === idx));
-  document.getElementById("avatarNameDisplay").textContent = AVATAR_NAMES[idx];
+// ═══ 학교/단과대 선택 ═══
+function onSchoolChange() {
+  var school = document.getElementById("schoolSelect").value;
+  var collegeEl = document.getElementById("collegeSelect");
+  collegeEl.style.display = school === "ewha" ? "" : "none";
+  if(school !== "ewha") collegeEl.value = "";
+  mySchool = school;
+  onCollegeChange(); // 수업 목록도 초기화
+  updatePreview();
+}
+function onCollegeChange() {
+  var college = document.getElementById("collegeSelect").value;
+  var classEl = document.getElementById("classSelect");
+  classEl.innerHTML = "<option value=''>수업 선택</option>";
+  var list = (college && COLLEGE_CLASSES[college]) ? COLLEGE_CLASSES[college] : [
+    "경영학원론","미시경제학","운영체제론","마케팅관리","알고리즘",
+    "심리학개론","철학의이해","선형대수학","회계원리","통계학","영어회화","기타수업"
+  ];
+  list.forEach(function(cls){
+    var opt = document.createElement("option");
+    opt.value = cls; opt.textContent = cls;
+    classEl.appendChild(opt);
+  });
+  myCollege = college;
+  updatePreview();
 }
 
-// ── Firebase ──────────────────────────────────────
-function initFirebase(){
-  try{
-    if(!firebaseConfig||firebaseConfig.apiKey==="YOUR_API_KEY") throw new Error("no config");
+// ═══ 닉네임 프리뷰 ═══
+function updatePreview() {
+  var school = document.getElementById("schoolSelect").value;
+  var college = document.getElementById("collegeSelect").value;
+  var cls = document.getElementById("classSelect").value;
+  var nick = (document.getElementById("nicknameInput").value||"").trim();
+  mySchool = school; myCollege = college; myClass = cls; myName = nick||"땡땡이";
+  var schoolLabel = school==="ewha"?"이화여대": school==="other"?"타대생":"?";
+  var tag = myCharEmoji + " [" + (college||schoolLabel||"?") + "] " + (nick||"땡땡이");
+  myTag = tag;
+  document.getElementById("previewTag").textContent = tag;
+}
+
+// ═══ Firebase ═══
+function initFirebase() {
+  try {
+    if (!firebaseConfig || firebaseConfig.apiKey==="YOUR_API_KEY") throw new Error("no config");
     firebase.initializeApp(firebaseConfig);
-    db=firebase.database();
-    mySessionId="u_"+Math.random().toString(36).slice(2,9)+"_"+Date.now();
-    var p=db.ref("presence/"+mySessionId);
+    db = firebase.database();
+    mySessionId = "u_"+Math.random().toString(36).slice(2,9)+"_"+Date.now();
+    var p = db.ref("presence/"+mySessionId);
     p.set({at:Date.now()}); p.onDisconnect().remove();
     db.ref("presence").on("value",function(s){setLiveCount(s.numChildren());});
-  }catch(e){
+  } catch(e) {
     console.warn("오프라인 모드:",e.message);
     db=null; fakeCount();
   }
@@ -418,7 +679,26 @@ function initFirebase(){
 function setLiveCount(n){var e=document.getElementById("liveCountText");if(e)e.textContent="현재 "+Number(n).toLocaleString()+"명 땡땡이 중";}
 function fakeCount(){var b=2700+Math.floor(Math.random()*400);setLiveCount(b);setInterval(function(){b=Math.max(2400,Math.min(3600,b+Math.floor(Math.random()*20)-9));setLiveCount(b);},4000);}
 
-// ── 지문 ─────────────────────────────────────────
+
+var COLLEGE_CLASSES = {
+  "간호대학": ["간호미생물학","간호정보와기술","간호창업과경영","간호학연구","기본간호학Ⅰ","모성건강간호학Ⅰ","보건의료법","보건의료정책","성인건강간호학Ⅰ","성인건강간호학Ⅲ","세계보건의료와간호전문직","아동건강간호학Ⅱ","의사소통과협력관계","인간성장과발달","인체구조와생리Ⅰ","전문직과자기개발","정신건강간호학Ⅰ","지역사회건강간호학Ⅰ","통합적간호중재","Global Nursing Issues","Health Assessment","Health Assessment Practicum","Introduction of Global Health"],
+  "경영대학": ["AI와비즈니스애플리케이션","Business Project Planning & Management-캡스톤디자인","CampusCEO창업과고객개발","MICE Contents Design-캡스톤디자인","개인금융","거시경제이론","경영리더십","경영시뮬레이션","경영의사결정론","경영정보시스템","경영통계학","경제사","경제수학","경제원론","경제정책분석","경제통계학","경제학세미나","계량경제학","고급세무회계","국제경영학","국제금융론","국제무역론","국제사무학원론","글로벌커리어개발과기업가정신","금융경제학"],
+  "공과대학": ["4차산업혁명과창의융합SW","AI리빙랩Ⅱ","AI응용수학","C++기초프로그래밍","JAVA프로그래밍및실습Ⅰ","SW리더십과기업가정신세미나","가상현실","강구조및설계","건축공학수학","건축구조의이해","건축기계설비시스템","건축도시시스템공학개론","건축도시시스템공학기초설계","건축도시시스템종합설계","건축도시정보모델링및활용","건축사1","건축사업비관리","건축설계1","건축설계3","건축설계5","건축설계7(종합설계)","건축실무및취창업","건축열·공기환경계획","건축재료","건축제도와정책"],
+  "사범대학": ["AI·디지털리터러시","AI기반첨단화학기술특론","GIS기초","경제현상의이해","고급대기과학및실험Ⅰ","고급무기화학","고급유기화학","고급지구과학실습","고급지질학및실험Ⅰ","고급현대물리","고전산문교육론","공간통계","교사를위한조선시대사","교수설계","교육공학HRD세미나","교육과정","교육문법의이해","교육방법및교육공학","교육사회","교육심리","교육의심리적기초","교육철학및교육사","교육철학탐구","교육커뮤니케이션의이해와실제","교육테크놀로지"],
+  "사회과학대학": ["AI미디어데이터사이언스입문","PR커뮤니케이션","가족복지론","감정과심리의사회학","경기기록및전력분석","공공커뮤니케이션","광고PR디지털에널리틱스","광고심리학","광고카피라이팅","광고캠페인","국가정보론","국제광고PR","국제기구와북한","국제정치경제","글로컬시대의아시아여성","금융소비자보호론","기구필라테스","기사작성기초","기초심리통계","노동과젠더","다큐멘터리제작","대중문화연구","데이터과학적사고와사회문제해결과정","미국정치","미디어글쓰기와스피치"],
+  "스크랜튼대학": ["AI+콘텐츠코딩","UI디자인","가상현실콘텐츠","게임스토리텔링","과학과문명","독립연구","디지털미디어디자인","디지털스토리텔링개론","디지털스토리텔링의이해","리더를위한과학과인공지능","메이커스워크샵","사고력과글쓰기","사회과학연구방법론","웹콘텐츠개발","융합콘텐츠와디자인","융합콘텐츠캡스톤디자인Ⅰ","이터레이티브디자인","창의적융합연구Ⅱ","창의적융합연구Ⅳ","추론과논증의이해","컴퓨팅적사고와프로그래밍","콘텐츠아키텍처링","크리에이티브라이팅","Content Prototyping","Critical Thinking and Moral Theories"],
+  "식품영양학대학": ["공공도서관","기록관리학의이해","문헌정보학의이해","부모교육","비주얼머천다이징","생애주기영양학","생화학","서양조리실습","서지학의이해","스타일드로잉","식품과현대사회","식품위생및법규","식품화학","아동/청소년자료","영양정보관리및상담실습","영양판정및실험","영양학","외식과현대사회","외식산업과다량조리","의류산업과패션","의류소재이해","의류소재평가","인터랙션디자인의이해","정보검색과검색엔진","정보서비스"],
+  "약학대학": ["동물의약품","문헌평가및임상연구디자인","물리약학Ⅰ","바이오의약품Ⅰ","병태생리학","분자생물학","생물약제학","암생물학","약리학Ⅰ","약물역학","약물전달학","약물치료학Ⅰ","약물치료학Ⅱ","약사와사회","약전학및품질과학Ⅰ","약품기기분석학","약품미생물학Ⅰ","약품생화학Ⅰ","약품유기Ⅰ","약품합성학Ⅰ","약학개론","약학실습Ⅰ","약학실습Ⅱ","약학실습Ⅲ","약학실습Ⅳ"],
+  "음악대학": ["20세기음악Ⅰ","20세기음악분석Ⅰ","20세기음악양식Ⅰ","건반악기문헌Ⅰ","건반악기문헌Ⅲ","건반화성Ⅰ","관악합주Ⅰ","관악합주Ⅲ","관악합주Ⅴ","관악합주Ⅶ","관합주Ⅰ","관합주Ⅲ","관합주Ⅴ","관합주Ⅶ","관현악Ⅰ","관현악Ⅲ","관현악Ⅴ","관현악Ⅶ","관현악문헌","관현악법Ⅰ","교양합창","국악교육론","국악의이해","그룹피아노교수법Ⅰ","대위Ⅰ"],
+  "의과대학": ["건강웰니스과학의이해","국제보건","논리적사고와글쓰기","보건교육과건강증진","보건의료데이터베이스(캡스톤디자인)","보건의료법규","보건학의이해","보건행정및정책","분자세포생물학Ⅰ","비판적의사소통","역학조사(캡스톤디자인)","유기화학","의과학의현재와미래","의료보장론","의학의철학과역사","인간행동의이해","인체해부생리학","일반화학","정신보건","조사방법론","화학실험"],
+  "인문과학대학": ["(유학생을위한)보고서와논문쓰기","21세기사회와문학의대화","SF문학의이해","국어교과교육론","국어교과논리및논술","국제사회속의프랑스","그림과글로만나는우리고전","그림속한국역사문화읽기","근대중국의개혁과혁명","기독교교육커리큘럼","기독교와세계","기독교윤리와사회문제","기본독일어","기본일본어","기본중국어","기본프랑스어","논리와사고","논리와컴퓨터","도시⋅공간문화로읽는한국사","독문법기초","독일고전영화","독일도시와인문학","독일어권문학의이해","독일어권문화의이해","독일어여행"],
+  "자연과학대학": ["21C바이오산업","계산과학알고리즘","고급생명과학실험캡스톤디자인Ⅰ","고분자화학Ⅰ","고체물리학","과학교과교육론","과학교과논리및논술","과학교육과정과평가","과학사와융합교육","기능적신경해부학","기초확률론","뇌-기계인터페이스","뇌과학의발견","뇌인지과학실험실습Ⅰ","뇌인지과학응용","다변량분석및실습","다변수미분적분학","동물다양성","동물생리학Ⅰ","무기화학","무기화학Ⅰ","물리및분석화학실험","물리화학II","물리화학Ⅰ","물리화학Ⅲ"],
+  "조형예술대학": ["AI기반디지털트윈공간디자인","K-문화와공간","UX디자인졸업연구Ⅰ","공간디자인과재료","공간디자인스튜디오Ⅰ","공간디자인스튜디오Ⅲ","공간설치","공간조명디자인","공예교과논리및논술","구성조각","그래픽디자인졸업연구Ⅰ","기초자수","내러티브디자인","도예조소Ⅰ","도자공예Ⅰ","도자와공간Ⅰ","도자재료Ⅰ","동시대미술론","동양미학의전개","드로잉워크샵Ⅰ","디자인리서치","디자인스튜디오(캡스톤디자인)Ⅲ","디자인아트졸업연구Ⅰ","디지털그래픽스Ⅰ","디지털드로잉Ⅰ"],
+  "체육과학부": ["골프","농구","뉴스포츠","수영","스포츠과학의이해","스포츠사회학","스포츠산업의이해","스포츠카운슬링","운동발달","운동생리학","운동역학및실습","운동프로그램개발(캡스톤디자인)","운동학습원리및적용","움직임을통한감정코칭","육상","장애인스포츠론","체육교과교육론","체육교과논리및논술","코칭론","테니스","퍼스널트레이닝(P.T.)","호신의이론과실제"],
+  "호크마교양대학": ["K-컬처로읽는한국옛이야기와정서","국가안보론","글로벌호크마세미나1:이화첫걸음","기본러시아어","기본스페인어","나눔과공존의리더십","나눔커뮤니티가드닝","대중문화속생활한국어탐색","라틴어입문","리더십","무기체계론","북한학","전쟁사","중급스페인어","통합적사고와글쓰기","플랫폼과미디어리터러시이해","한국어기초의이해","한국어기초표현","한국어발표와토론","한국어쓰기의실제","한국어와소통","한국어와표현","Advanced English","Business and Technical English","Cinema Arts and English"]
+};
+
+// ═══ 지문 ═══
 function pickPrompt(){
   currentPromptIdx=Math.floor(Math.random()*PROMPTS.length);
   currentPrompt=PROMPTS[currentPromptIdx];
@@ -428,35 +708,44 @@ function pickPrompt(){
   if(i)i.textContent=currentPromptIdx+1;
 }
 function buildPromptDisplay(){
-  var el=document.getElementById("promptDisplay");
-  if(!el)return;
+  var el=document.getElementById("promptDisplay"); if(!el)return;
   el.innerHTML="";
+  // 공백 기준으로 wbr 삽입해서 줄바꿈 허용
   Array.from(currentPrompt).forEach(function(c,i){
     var s=document.createElement("span");
     s.className="ch "+(i===0?"cursor":"pending");
     s.id="ch"+i;
-    // 이전에는 c===" "?"\u00a0":c 로 되어있어서 문장 줄바꿈이 안되는 원인이었습니다.
-    // 일반 공백을 그대로 넣고 CSS에서 white-space: pre-wrap 으로 처리합니다.
-    s.textContent=c; 
+    s.textContent=c===" "?" ":c;
     el.appendChild(s);
+    // 공백 뒤에 줄바꿈 허용 포인트 삽입
+    if(c===" "){
+      var wbr=document.createElement("wbr");
+      el.appendChild(wbr);
+    }
   });
 }
 
-// ── 닉네임 ───────────────────────────────────────
-function updatePreview(){
-  var cls=document.getElementById("classSelect").value||"수업선택";
-  var nick=(document.getElementById("nicknameInput").value||"").trim()||"땡땡이";
-  myTag="["+cls+"] "+nick; myName=nick;
-  var e=document.getElementById("previewTag"); if(e)e.textContent=myTag;
-}
-
+// ═══ 탭 ═══
 function switchLobbyTab(idx){
   document.querySelectorAll(".tab").forEach(function(t,i){t.classList.toggle("active",i===idx);});
   document.getElementById("lobbyTab0").style.display=idx===0?"":"none";
   document.getElementById("lobbyTab1").style.display=idx===1?"":"none";
-  if(idx===1)loadRegionMap();
+  document.getElementById("lobbyTab2").style.display=idx===2?"":"none";
+  if(idx===1)loadCollegeRank();
+  if(idx===2)loadRegionMap();
 }
 
+// ═══ 단과대 랭킹 ═══
+async function loadCollegeRank(){
+  var list=document.getElementById("collegeRankList"); if(!list)return;
+  if(!db){list.innerHTML='<div class="rank-empty">Firebase 연결 후 표시됩니다.</div>';return;}
+  var snap=await db.ref("college_rank").orderByChild("avgWpm").limitToLast(12).once("value");
+  var rows=[]; snap.forEach(function(c){rows.unshift(c.val());});
+  if(!rows.length){list.innerHTML='<div class="rank-empty">아직 데이터가 없습니다.</div>';return;}
+  renderRankItems(list,rows.map(function(r){return{name:r.college,wpm:r.avgWpm,isMe:r.college===myCollege,char:"🏫"};}));
+}
+
+// ═══ 지도 ═══
 async function loadRegionMap(){
   var loading=document.getElementById("mapLoading");
   var list=document.getElementById("regionList");
@@ -466,12 +755,12 @@ async function loadRegionMap(){
     try{
       var s=await db.ref("regions").once("value"); regions=s.val()||{};
       var r=await fetch("https://ipapi.co/json/"); var g=await r.json();
-      var k=((g.city||"알수없음")+"_"+(g.region||"")).replace(/[.#$\[\]\/\s]/g,"_");
+      var k=((g.city||"알수없음")+"_"+(g.region||"")).replace(/[.#$\/\[\]\s]/g,"_");
       await db.ref("regions/"+k).transaction(function(v){return(v||0)+1;});
       s=await db.ref("regions").once("value"); regions=s.val()||{};
     }catch(e){}
   }else{
-    regions={"서울_관악구":138,"서울_강남구":92,"부산_금정구":61,"대전_유성구":49,"인천_연수구":41,"대구_북구":35,"광주_북구":28,"수원_팔달구":22};
+    regions={"서울_서대문구":89,"서울_관악구":72,"서울_강남구":61,"부산_금정구":43,"대전_유성구":38};
   }
   if(loading)loading.style.display="none";
   var sorted=Object.entries(regions).sort(function(a,b){return b[1]-a[1];});
@@ -485,108 +774,189 @@ async function loadRegionMap(){
   });
 }
 
+// ═══ 로비 랭킹 ═══
 async function loadLobbyRank(){
   var list=document.getElementById("lobbyRankList"); if(!list)return;
   if(!db){list.innerHTML='<div class="rank-empty">Firebase 연결 후 실시간 랭킹이 표시됩니다.</div>';return;}
   var snap=await db.ref("daily/"+todayKey()).orderByChild("wpm").limitToLast(10).once("value");
   var rows=[]; snap.forEach(function(c){rows.unshift(c.val());});
   if(!rows.length){list.innerHTML='<div class="rank-empty">오늘 기록이 없어요. 첫 배틀러가 되세요!</div>';return;}
-  renderRankItems(list,rows.map(function(r){return{name:r.tag||"익명",wpm:r.wpm,avatar:r.avatar||0,isMe:false};}));
+  renderRankItems(list,rows.map(function(r){return{name:r.tag||"익명",wpm:r.wpm,isMe:false,char:r.charEmoji||"🎮",cls:r.cls||""};}));
 }
 
-// ── 배틀 시작 ────────────────────────────────────
+// ═══ 배틀 시작 ═══
 function startBattle(){
   var nick=(document.getElementById("nicknameInput").value||"").trim();
   var cls=document.getElementById("classSelect").value;
-  if(!nick||!cls){showToast("닉네임과 수업을 선택하세요!");return;}
+  var school=document.getElementById("schoolSelect").value;
+  if(!nick){showToast("닉네임을 입력하세요!");return;}
+  if(!school){showToast("학교를 선택하세요!");return;}
+  if(!cls){showToast("수업을 선택하세요!");return;}
 
   charIndex=0;errors=0;totalTyped=0;myWpm=0;myAcc=100;myCombo=0;
-  timerSec=60; battleStartTime=null;
+  timerSec=60;battleStartTime=null;composing=false;
 
-  // 주의: 여기서 pickPrompt()를 다시 호출하면 로비와 지문이 달라집니다.
-  // 로비에서 미리 뽑아둔 currentPrompt를 그대로 사용하도록 제거했습니다.
+  pickPrompt();
   buildPromptDisplay();
 
-  document.getElementById("battleMyAvatar").src = AVATAR_SVGS[myAvatarIdx];
-  document.getElementById("battleMyName").textContent = myTag;
-  document.getElementById("progressRunner").src = AVATAR_SVGS[myAvatarIdx];
-  
+  document.getElementById("battleChar").textContent=myCharEmoji;
+  document.getElementById("battleTag").textContent=myName;
+  document.getElementById("battleClass").textContent=myClass+" | "+myCollege;
   document.getElementById("statWpm").textContent="0";
   document.getElementById("statAcc").textContent="100";
   document.getElementById("statRank").textContent="-";
   document.getElementById("statCombo").textContent="0";
   document.getElementById("progressBar").style.width="0%";
-  document.getElementById("progressRunner").style.left="0%";
   document.getElementById("progressLabel").textContent="0%";
   document.getElementById("timerDisplay").textContent="01:00";
   document.getElementById("timerDisplay").classList.remove("danger");
-  document.getElementById("battleRankList").innerHTML='<div class="rank-empty">상대방 연결 대기 중...</div>';
+  document.getElementById("livePlayers").innerHTML='<div class="rank-empty">상대방 연결 대기 중...</div>';
 
-  document.getElementById("phaseLobby").classList.remove("active");
-  document.getElementById("phaseBattle").classList.add("active");
-  document.getElementById("phaseResult").classList.remove("active");
+  showPhase("battle");
+
+  // 처음 배틀 시작 시 ESC 툴팁 1회 표시
+  setTimeout(showCoverTooltip, 1000);
 
   if(timerInterval)clearInterval(timerInterval);
   timerInterval=setInterval(tickTimer,1000);
   joinBattleRoom();
 
   var inp=document.getElementById("typeInput");
-  attachTypingIfNeeded(inp);
+  inp.removeEventListener("compositionstart",onCompositionStart);
+  inp.removeEventListener("compositionend",onCompositionEnd);
+  inp.removeEventListener("keydown",onKeydown);
+  inp.removeEventListener("input",onInput);
+  inp.addEventListener("compositionstart",onCompositionStart);
+  inp.addEventListener("compositionend",onCompositionEnd);
+  inp.addEventListener("keydown",onKeydown);
+  inp.addEventListener("input",onInput);
   inp.value="";
   inp.focus();
 }
 
-// ── 타이핑 핸들러 ────────────────────────────────
-function attachTypingIfNeeded(inp){
-  if(!inp)return;
-  if(inp.dataset.attached==="1")return;
-  inp.dataset.attached="1";
-  inp.addEventListener("input", handleInput);
+// ═══ 타이핑 핸들러 ═══
+// input 값을 지우지 않고 유지 — 실시간으로 지문과 비교
+// 한국어 IME: composing 중에도 매 input 이벤트마다 현재 value 그대로 반영
+function onCompositionStart(){ composing=true; }
+function onCompositionEnd(e){
+  composing=false;
+  // 조합 완료 후 정답 길이까지만 허용
+  var inp=e.target;
+  inp.value=clampToCorrect(inp.value);
+  syncPromptWithInput(inp.value);
+}
+function onKeydown(e){
+  if(e.key==="Backspace"){
+    var inp=e.target;
+    var correct=getCorrectLen(inp.value);
+    // 정답 부분까지 줄었으면 더 이상 못 지움
+    if(inp.value.length<=correct) e.preventDefault();
+    return;
+  }
+  // 영문/숫자/특수문자 등 non-IME 입력: 틀린 상태면 차단
+  if(!composing && e.key.length===1 && !e.ctrlKey && !e.metaKey){
+    var typed=e.target.value;
+    if(typed.length > getCorrectLen(typed)) e.preventDefault();
+  }
+}
+function onInput(e){
+  if(!battleStartTime) battleStartTime=Date.now();
+  var inp=e.target;
+  // 핵심: input 이벤트 발생 때마다 틀린 글자 이후는 잘라냄
+  if(!composing){
+    inp.value=clampToCorrect(inp.value);
+  }
+  syncPromptWithInput(inp.value);
 }
 
-function handleInput(e){
-  var val = e.target.value;
-  if(!battleStartTime && val.length > 0) battleStartTime = Date.now();
-  if(val.length > currentPrompt.length) {
-    val = val.substring(0, currentPrompt.length);
-    e.target.value = val;
+// 앞에서부터 연속으로 맞은 글자 수 반환
+function getCorrectLen(typed){
+  var correct=0;
+  for(var i=0;i<typed.length;i++){
+    if(typed[i]===currentPrompt[i]) correct=i+1;
+    else break;
+  }
+  return correct;
+}
+// 틀린 글자 이후를 잘라낸 값 반환 (틀린 글자 1개까지는 허용 — 빨간 표시용)
+function clampToCorrect(typed){
+  var correct=getCorrectLen(typed);
+  // 틀린 글자가 있으면 정답 위치+1 까지만 허용 (틀린 한 글자는 보여줘야 함)
+  if(typed.length > correct+1){
+    return typed.slice(0, correct+1);
+  }
+  return typed;
+}
+function syncPromptWithInput(typed){
+  if(typed===undefined||typed===null) return;
+
+  // ── 핵심 로직 ──────────────────────────────────────
+  // 앞에서부터 순서대로 비교.
+  // 틀린 글자가 나오는 순간 → 그 자리에서 cursor(빨강) 멈춤
+  // 맞을 때만 correct로 칠하고 다음으로 진행
+  // ──────────────────────────────────────────────────
+
+  var confirmedLen = 0; // 앞에서부터 연속으로 맞은 글자 수
+
+  for(var i=0; i<typed.length; i++){
+    if(typed[i] === currentPrompt[i]){
+      confirmedLen = i+1;
+    } else {
+      // 틀린 자리 — 여기서 멈춤
+      break;
+    }
   }
 
-  charIndex = val.length; 
-  errors = 0; myCombo = 0;
-
-  for(var i = 0; i < currentPrompt.length; i++) {
-    var el = document.getElementById("ch" + i);
+  // 지문 색칠
+  for(var i=0; i<currentPrompt.length; i++){
+    var el=document.getElementById("ch"+i);
     if(!el) continue;
-    if(i < val.length) {
-      if(val[i] === currentPrompt[i]) { el.className = "ch correct"; myCombo++; } 
-      else { el.className = "ch wrong"; errors++; myCombo = 0; }
-    } else if (i === val.length) { el.className = "ch cursor"; } 
-    else { el.className = "ch pending"; }
+    if(i < confirmedLen){
+      el.className="ch correct";
+    } else if(i === confirmedLen){
+      // 현재 커서 위치 — 틀린 글자가 있으면 wrong+cursor, 아직 안 입력이면 cursor
+      if(typed.length > confirmedLen){
+        el.className="ch wrong"; // 틀린 글자 입력 중
+      } else {
+        el.className="ch cursor"; // 아직 입력 전
+      }
+    } else {
+      el.className="ch pending";
+    }
   }
 
-  var elapsed = (Date.now() - battleStartTime) / 60000;
-  myWpm = elapsed > 0 ? Math.round((charIndex / 5) / elapsed) : 0;
-  myAcc = charIndex > 0 ? Math.round(((charIndex - errors) / charIndex) * 100) : 100;
-  
-  document.getElementById("statWpm").textContent = myWpm;
-  document.getElementById("statAcc").textContent = myAcc;
-  document.getElementById("statCombo").textContent = myCombo;
-  
-  var pct = Math.round((charIndex / currentPrompt.length) * 100);
-  document.getElementById("progressBar").style.width = pct + "%";
-  document.getElementById("progressRunner").style.left = pct + "%";
-  document.getElementById("progressLabel").textContent = pct + "%";
-  
-  if(charIndex % 5 === 0 && charIndex > 0) updateMyRoomData();
-  
-  if(charIndex >= currentPrompt.length) {
-    setTimeout(function() {
-      if(document.getElementById("typeInput").value.length >= currentPrompt.length) endBattle();
-    }, 50);
+  // charIndex = 실제 진행된 위치 (맞은 글자까지만)
+  charIndex = confirmedLen;
+  totalTyped = typed.length;
+  errors = typed.length - confirmedLen; // 틀린 글자 수 = 입력했지만 안 맞은 것들
+
+  // 콤보: 새 글자가 맞을 때만 증가
+  if(confirmedLen > charIndex){
+    myCombo++;
+  } else if(typed.length > confirmedLen){
+    myCombo=0; // 틀린 상태
   }
+
+  updateStats();
+  if(confirmedLen>0 && confirmedLen%5===0) updateMyRoomData();
+
+  // 완료: 지문 전체를 정확히 입력했을 때
+  if(confirmedLen >= currentPrompt.length) endBattle();
+}
+function processChar(ch){}
+function updateStats(){
+  var elapsed=battleStartTime?(Date.now()-battleStartTime)/60000:0;
+  myWpm=elapsed>0?Math.round((charIndex/5)/elapsed):0;
+  myAcc=totalTyped>0?Math.round(((totalTyped-errors)/totalTyped)*100):100;
+  document.getElementById("statWpm").textContent=myWpm;
+  document.getElementById("statAcc").textContent=myAcc;
+  document.getElementById("statCombo").textContent=myCombo;
+  var pct=currentPrompt.length>0?Math.round((charIndex/currentPrompt.length)*100):0;
+  document.getElementById("progressBar").style.width=pct+"%";
+  document.getElementById("progressLabel").textContent=pct+"%";
 }
 
+// ═══ 타이머 ═══
 function tickTimer(){
   timerSec--;
   var m=String(Math.floor(timerSec/60)).padStart(2,"0"),s=String(timerSec%60).padStart(2,"0");
@@ -595,95 +965,203 @@ function tickTimer(){
   if(timerSec<=0)endBattle();
 }
 
+// ═══ Firebase 방 ═══
 function joinBattleRoom(){
   if(!db)return;
   battleRoomId="room_"+Math.floor(Date.now()/30000);
   myRoomRef=db.ref("rooms/"+battleRoomId+"/players/"+mySessionId);
-  myRoomRef.set({tag:myTag,wpm:0,acc:100,progress:0,avatar:myAvatarIdx,at:Date.now()});
+  myRoomRef.set({tag:myTag,name:myName,charEmoji:myCharEmoji,college:myCollege,cls:myClass,wpm:0,acc:100,progress:0,at:Date.now()});
   myRoomRef.onDisconnect().remove();
   if(rankListener)db.ref("rooms/"+battleRoomId+"/players").off("value",rankListener);
   rankListener=db.ref("rooms/"+battleRoomId+"/players").on("value",function(snap){
     var players=[]; snap.forEach(function(c){players.push(Object.assign({id:c.key},c.val()));});
-    renderBattleRank(players);
+    renderLivePlayers(players);
   });
 }
-function updateMyRoomData(){if(!myRoomRef)return;myRoomRef.update({wpm:myWpm,acc:myAcc,progress:Math.round((charIndex/currentPrompt.length)*100)});}
-
-// ── 배틀 종료 (중복 이름 덮어쓰기 로직 적용) ────────────────
-async function endBattle(){
-  clearInterval(timerInterval); timerInterval=null;
-  updateMyRoomData();
-  if(db){
-    var safeKey = myTag.replace(/[.#$\[\]\/\s]/g, "_");
-    await db.ref("daily/"+todayKey()+"/"+safeKey).set({
-      tag: myTag,
-      wpm: myWpm,
-      acc: myAcc,
-      promptIdx: currentPromptIdx,
-      avatar: myAvatarIdx,
-      at: Date.now()
-    });
-    
-    if(myRoomRef)myRoomRef.remove();
-  }
-  await buildResultScreen();
-  document.getElementById("phaseLobby").classList.remove("active");
-  document.getElementById("phaseBattle").classList.remove("active");
-  document.getElementById("phaseResult").classList.add("active");
+function updateMyRoomData(){
+  if(!myRoomRef)return;
+  var pct=currentPrompt.length>0?Math.round((charIndex/currentPrompt.length)*100):0;
+  myRoomRef.update({wpm:myWpm,acc:myAcc,progress:pct});
 }
 
+// ═══ 실시간 배틀 현황 ═══
+var floatPositions = {}; // 각 플레이어 위치 기억
+
+function renderLivePlayers(players){
+  var sorted=players.slice().sort(function(a,b){return(b.wpm||0)-(a.wpm||0);});
+  var myIdx=sorted.findIndex(function(p){return p.id===mySessionId;});
+  document.getElementById("statRank").textContent=myIdx>=0?(myIdx+1)+"위":"-";
+
+  // ① 카드 안 작은 목록
+  var container=document.getElementById("livePlayers");
+  container.innerHTML="";
+  sorted.forEach(function(p){
+    var div=document.createElement("div");
+    div.className="live-player"+(p.id===mySessionId?" is-me":"");
+    div.innerHTML=
+      '<div class="live-player-char">'+(p.charEmoji||"🎮")+'</div>'+
+      '<div class="live-player-name">'+(p.id===mySessionId?"★ ":"")+esc(p.name||"익명")+'</div>'+
+      '<div class="live-player-wpm">'+(p.wpm||0)+' WPM</div>';
+    container.appendChild(div);
+  });
+
+  // ② 배경에 둥둥 떠다니는 캐릭터 (나 제외)
+  var fp=document.getElementById("floatingPlayers"); if(!fp)return;
+  var W=window.innerWidth, H=window.innerHeight;
+  // 나 아닌 플레이어만
+  var others=sorted.filter(function(p){return p.id!==mySessionId;});
+  // 기존 것 지우고 다시
+  fp.innerHTML="";
+  others.forEach(function(p){
+    // 위치: 이전 위치 재사용 or 새로 랜덤 (화면 가장자리 쪽)
+    if(!floatPositions[p.id]){
+      floatPositions[p.id]={
+        x: 60+Math.random()*(W-120),
+        y: 80+Math.random()*(H*0.5),
+        dx: (Math.random()-0.5)*0.3,
+        dy: (Math.random()-0.5)*0.15,
+      };
+    }
+    var pos=floatPositions[p.id];
+    var div=document.createElement("div");
+    div.className="float-player";
+    div.style.left=pos.x+"px";
+    div.style.top=pos.y+"px";
+    div.style.animationDuration=(2+Math.random()*1.5)+"s";
+    div.innerHTML=
+      '<div class="float-char">'+(p.charEmoji||"🎮")+'</div>'+
+      '<div class="float-name">'+esc(p.name||"익명")+'</div>';
+    fp.appendChild(div);
+  });
+}
+
+// 둥둥 위치 업데이트 (천천히 떠다니게)
+function tickFloat(){
+  var W=window.innerWidth, H=window.innerHeight;
+  Object.values(floatPositions).forEach(function(pos){
+    pos.x+=pos.dx; pos.y+=pos.dy;
+    if(pos.x<40||pos.x>W-100)pos.dx*=-1;
+    if(pos.y<60||pos.y>H*0.7)pos.dy*=-1;
+  });
+}
+setInterval(tickFloat, 50);
+
+// ═══ 배틀 종료 ═══
+async function endBattle(){
+  clearInterval(timerInterval);timerInterval=null;
+  updateMyRoomData();
+  if(db){
+    var today=todayKey();
+    await db.ref("daily/"+today).push({tag:myTag,name:myName,charEmoji:myCharEmoji,college:myCollege,cls:myClass,wpm:myWpm,acc:myAcc,at:Date.now()});
+    if(myRoomRef)myRoomRef.remove();
+    // 단과대 평균 업데이트
+    if(myCollege){
+      var cRef=db.ref("college_rank/"+myCollege.replace(/\s/g,"_"));
+      await cRef.transaction(function(cur){
+        if(!cur)return{college:myCollege,totalWpm:myWpm,count:1,avgWpm:myWpm};
+        var total=cur.totalWpm+myWpm,cnt=cur.count+1;
+        return{college:myCollege,totalWpm:total,count:cnt,avgWpm:Math.round(total/cnt)};
+      });
+    }
+  }
+  await buildResultScreen();
+  showPhase("result");
+}
+
+// ═══ 결과 화면 ═══
 async function buildResultScreen(){
+  document.getElementById("resChar").textContent=myCharEmoji;
+  document.getElementById("resName").textContent=myName;
+  document.getElementById("resClassTag").textContent=(myCollege||mySchool)+" | "+myClass;
   document.getElementById("resWpm").textContent=myWpm;
   document.getElementById("resAcc").textContent=myAcc+"%";
   document.getElementById("resCombo").textContent=myCombo;
-  document.getElementById("resPrompt").textContent="지문 "+(currentPromptIdx+1)+"번";
+
   var myRank=1,total=1,resultList=document.getElementById("resultRankList");
   if(db){
     var snap=await db.ref("daily/"+todayKey()).orderByChild("wpm").once("value");
     var rows=[]; snap.forEach(function(c){rows.push(c.val());}); rows.sort(function(a,b){return b.wpm-a.wpm;});
-    total=rows.length; myRank=rows.findIndex(function(r){return r.tag===myTag&&r.wpm===myWpm;})+1||1;
-    renderRankItems(resultList,rows.slice(0,8).map(function(r){return{name:r.tag,wpm:r.wpm,avatar:r.avatar||0,isMe:r.tag===myTag&&r.wpm===myWpm};}));
-  }else{if(resultList)resultList.innerHTML='<div class="rank-empty">Firebase 연결 후 랭킹이 저장됩니다.</div>';}
-  var msgs={1:"🏆 1등! 수업 중 최강 타자 등극!",2:"🥈 2등! 조금만 더 빨랐으면...",3:"🥉 3등! 교수님보단 빠르다"};
-  document.getElementById("resultBanner").textContent=msgs[myRank]||(myRank+"등 / 오늘 "+total+"명 중 — 다음엔 꼭 1등!");
+    total=rows.length;
+    myRank=rows.findIndex(function(r){return r.tag===myTag&&r.wpm===myWpm;})+1||1;
+    renderRankItems(resultList,rows.slice(0,8).map(function(r){
+      return{name:r.name||r.tag,wpm:r.wpm,isMe:r.tag===myTag&&r.wpm===myWpm,char:r.charEmoji||"🎮",cls:r.cls||""};
+    }));
+  }else{
+    if(resultList)resultList.innerHTML='<div class="rank-empty">Firebase 연결 후 랭킹이 저장됩니다.</div>';
+  }
+
+  var msgs={1:"🏆 1등! 수업 중 최강 타자!",2:"🥈 2등! 아깝다...",3:"🥉 3등!"};
+  document.getElementById("resBadge").textContent=msgs[myRank]||(myRank+"등 / 오늘 "+total+"명 중");
   drawShareCard(myWpm,myAcc,myRank,total);
 }
 
+// ═══ 공유 카드 (캐릭터 + 닉네임 + 수업 포함) ═══
 function drawShareCard(wpm,acc,rank,total){
   var canvas=document.getElementById("shareCanvas"); if(!canvas)return;
-  var ctx=canvas.getContext("2d"); canvas.width=600;canvas.height=300;
-  ctx.fillStyle="#0a0a0a";ctx.fillRect(0,0,600,300);
-  ctx.strokeStyle="#e8621a";ctx.lineWidth=3;ctx.strokeRect(3,3,594,294);
-  
-  let avaImg = new Image();
-  avaImg.onload = function() {
-    ctx.drawImage(avaImg, 510, 24, 60, 60); 
-  };
-  avaImg.src = AVATAR_SVGS[myAvatarIdx];
+  var ctx=canvas.getContext("2d"); canvas.width=600;canvas.height=320;
 
-  ctx.fillStyle="#ff7a20";ctx.font="bold 16px monospace";ctx.fillText("땡땡이닷컴 — CLASS ESCAPE TYPING BATTLE",24,44);
-  ctx.fillStyle="#ff7a20";ctx.font="bold 52px monospace";ctx.fillText(wpm,24,148);
-  ctx.fillStyle="#7a5a30";ctx.font="13px monospace";ctx.fillText("WPM",24,170);
-  ctx.fillStyle="#44ffcc";ctx.font="bold 28px monospace";ctx.fillText(acc+"%",180,140);
-  ctx.fillStyle="#7a5a30";ctx.font="13px monospace";ctx.fillText("정확도",180,162);
-  ctx.fillStyle="#ffcc00";ctx.font="bold 28px monospace";ctx.fillText(rank+"위",320,140);
-  ctx.fillStyle="#7a5a30";ctx.font="13px monospace";ctx.fillText("오늘 "+total+"명 중",320,162);
-  ctx.fillStyle="#1a1004";ctx.fillRect(0,240,600,60);
-  ctx.fillStyle="#f0e8d8";ctx.font="12px monospace";ctx.fillText("수업 중 몰래 즐기는 실시간 타자 배틀",24,264);
-  ctx.fillStyle="#e8621a";ctx.fillText("ddangtangi.netlify.app",24,286);
+  // 배경
+  ctx.fillStyle="#0a0a14"; ctx.fillRect(0,0,600,320);
+  // 픽셀 그리드
+  ctx.strokeStyle="rgba(180,100,20,.06)"; ctx.lineWidth=1;
+  for(var x=0;x<600;x+=24){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,320);ctx.stroke();}
+  for(var y=0;y<320;y+=24){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(600,y);ctx.stroke();}
+  // 테두리
+  ctx.strokeStyle="#e8621a"; ctx.lineWidth=3; ctx.strokeRect(3,3,594,314);
+  // 상단 타이틀
+  ctx.fillStyle="#ff7a20"; ctx.font="bold 13px monospace";
+  ctx.fillText("땡땡이닷컴 — CLASS ESCAPE TYPING BATTLE",20,32);
+  // 캐릭터 (큰 이모지)
+  ctx.font="52px serif"; ctx.fillText(myCharEmoji,20,110);
+  // 닉네임
+  ctx.fillStyle="#f0e8d8"; ctx.font="bold 18px monospace";
+  ctx.fillText(myName,90,78);
+  // 수업 태그
+  ctx.fillStyle="#7a5a30"; ctx.font="12px monospace";
+  ctx.fillText((myCollege||mySchool||"")+" | "+myClass,90,100);
+  // 순위 (크게)
+  ctx.fillStyle="#ffcc00"; ctx.font="bold 42px monospace";
+  ctx.fillText(rank+"위",90,148);
+  ctx.fillStyle="#7a5a30"; ctx.font="11px monospace";
+  ctx.fillText("오늘 "+total+"명 중",90,168);
+  // WPM
+  ctx.fillStyle="#ff7a20"; ctx.font="bold 36px monospace"; ctx.fillText(wpm,340,130);
+  ctx.fillStyle="#7a5a30"; ctx.font="11px monospace"; ctx.fillText("타수/분 (WPM)",340,150);
+  // 정확도
+  ctx.fillStyle="#44ffcc"; ctx.font="bold 24px monospace"; ctx.fillText(acc+"%",340,195);
+  ctx.fillStyle="#7a5a30"; ctx.font="11px monospace"; ctx.fillText("정확도",340,212);
+  // 하단
+  ctx.fillStyle="#1a1004"; ctx.fillRect(0,260,600,60);
+  ctx.fillStyle="#f0e8d8"; ctx.font="12px monospace";
+  ctx.fillText("수업 중 몰래 즐기는 실시간 타자 배틀",20,284);
+  ctx.fillStyle="#e8621a"; ctx.fillText("ddangtangi.netlify.app",20,306);
 }
 
-function shareTwitter(){var w=document.getElementById("resWpm").textContent;window.open("https://twitter.com/intent/tweet?text="+encodeURIComponent("수업 중에 "+w+" WPM 찍었다💀\n땡땡이닷컴 👉 ddangtangi.netlify.app\n#땡땡이닷컴"),"_blank");}
-function copyShareLink(){navigator.clipboard.writeText("ddangtangi.netlify.app").then(function(){showToast("링크 복사 완료! 🎮");});}
-function downloadShareImage(){var c=document.getElementById("shareCanvas"),a=document.createElement("a");a.download="ddangtangi_result.png";a.href=c.toDataURL();a.click();}
-
-// ── 랭킹 렌더 ─────────────────────────────────────
-function renderBattleRank(players){
-  var sorted=players.slice().sort(function(a,b){return(b.wpm||0)-(a.wpm||0);});
-  var myIdx=sorted.findIndex(function(p){return p.id===mySessionId;});
-  document.getElementById("statRank").textContent=myIdx>=0?(myIdx+1)+"위":"-";
-  renderRankItems(document.getElementById("battleRankList"),sorted.map(function(p){return{name:p.tag||"익명",wpm:p.wpm||0,avatar:p.avatar||0,isMe:p.id===mySessionId};}));
+function shareKakao(){
+  // 카카오 SDK가 없으면 카카오 채널로 링크 연결
+  var w=document.getElementById("resWpm").textContent;
+  var text=myCharEmoji+" "+myName+" | "+myClass+"\n\n수업 중 "+w+"타 찍음💀\n땡땡이닷컴에서 같이 땡땡이 쳐요!\nddangtangi.netlify.app";
+  var url="https://sharer.kakao.com/talk/friends/picker/link?app_key=KAKAO_APP_KEY&validation_action=default&validation_params=%7B%7D";
+  // Kakao SDK 없이 카카오톡 URL scheme으로 공유
+  var kakaoUrl="kakaolink://send?msg="+encodeURIComponent(text)+"&url="+encodeURIComponent("https://ddangtangi.netlify.app");
+  // 앱이 없으면 링크 복사로 폴백
+  try{
+    window.open(kakaoUrl,"_blank");
+    setTimeout(function(){
+      // 앱이 안 열리면 링크 복사
+      navigator.clipboard.writeText("ddangtangi.netlify.app\n\n"+text).then(function(){
+        showToast("카카오 앱이 없으면 링크가 복사됐어요 📋");
+      });
+    }, 1500);
+  }catch(e){
+    navigator.clipboard.writeText("https://ddangtangi.netlify.app").then(function(){
+      showToast("링크 복사 완료! 카톡에 붙여넣기 해줘 🎮");
+    });
+  }
 }
+function downloadShareImage(){var c=document.getElementById("shareCanvas"),a=document.createElement("a");a.download="ddangtangi_"+myName+".png";a.href=c.toDataURL();a.click();}
+
+// ═══ 랭킹 렌더 ═══
 function renderRankItems(container,items){
   if(!container)return;
   var max=Math.max.apply(null,items.map(function(i){return i.wpm;}).concat([1]));
@@ -691,33 +1169,179 @@ function renderRankItems(container,items){
   items.forEach(function(item,i){
     var cls=["gold","silver","bronze"][i]||"other",pct=Math.round((item.wpm/max)*100);
     var div=document.createElement("div"); div.className="rank-item"+(item.isMe?" is-me":"");
-    div.innerHTML=`<span class="rank-num ${cls}">${i+1}</span>
-                   <img class="rank-avatar" src="${AVATAR_SVGS[item.avatar]}">
-                   <span class="rank-name">${item.isMe?"⭐ ":""}${esc(item.name)}</span>
-                   <div class="rank-bar-wrap"><div class="rank-bar" style="width:${pct}%"></div></div>
-                   <span class="rank-wpm">${item.wpm}<br><span style="font-size:6px;opacity:.6">WPM</span></span>`;
+    div.innerHTML=
+      '<span class="rank-num '+cls+'">'+(i+1)+'</span>'+
+      '<span class="rank-char">'+(item.char||"🎮")+'</span>'+
+      '<div class="rank-info">'+
+        '<div class="rank-name">'+(item.isMe?"⭐ ":"")+esc(item.name)+'</div>'+
+        (item.cls?'<div class="rank-class">'+esc(item.cls)+'</div>':'')+
+      '</div>'+
+      '<div class="rank-bar-wrap"><div class="rank-bar" style="width:'+pct+'%"></div></div>'+
+      '<span class="rank-wpm">'+item.wpm+'<br><span style="font-size:6px;opacity:.6">WPM</span></span>';
     container.appendChild(div);
   });
 }
 
-function backToLobby(){
-  document.getElementById("phaseLobby").classList.add("active");
-  document.getElementById("phaseBattle").classList.remove("active");
-  document.getElementById("phaseResult").classList.remove("active");
-  loadLobbyRank(); pickPrompt(); // 여기서만 새 지문을 뽑습니다.
+// ═══ Phase 전환 ═══
+function showPhase(name){
+  var ids=["phaseLobby","phaseBattle","phaseResult"];
+  var target="phase"+name.charAt(0).toUpperCase()+name.slice(1);
+  ids.forEach(function(id){
+    var el=document.getElementById(id);
+    if(el)el.classList.toggle("active",id===target);
+  });
+  // 배틀 아닐 땐 떠다니는 캐릭터 숨기기
+  var fp=document.getElementById("floatingPlayers");
+  if(fp)fp.style.display=(name==="battle")?"":"none";
 }
+function backToLobby(){showPhase("lobby");loadLobbyRank();pickPrompt();}
 
+// ═══ 유틸 ═══
 function todayKey(){return new Date().toISOString().slice(0,10);}
 function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
 function showToast(msg){var t=document.getElementById("toast");if(!t)return;t.textContent=msg;t.classList.add("show");setTimeout(function(){t.classList.remove("show");},2500);}
 
+// ═══ 키보드 커버 콘텐츠 (단과대/수업별) ═══
+var COVER_CONTENT = {
+  "경영대학": {
+    title:"경영학원론_중간고사_정리.docx",
+    heading:"경영학원론 중간고사 정리노트",
+    body:[
+      "경영학의 핵심 관리 기능은 <b>계획(Planning), 조직화(Organizing), 지휘(Leading), 통제(Controlling)</b>의 네 단계로 구성된다. 이를 POLC 프레임워크라 한다.",
+      "테일러(F.W. Taylor)의 과학적 관리법은 작업을 표준화하고 성과에 따른 차별적 성과급 제도를 도입하여 생산성 향상을 추구하였다. 현대 경영학의 출발점으로 평가된다.",
+      "마케팅 4P 전략: <b>제품(Product), 가격(Price), 유통(Place), 촉진(Promotion)</b>. 최근에는 디지털 환경을 반영해 4C(Customer, Cost, Convenience, Communication)로 재해석되기도 한다.",
+      "재무관리의 핵심 목표는 기업 가치의 극대화이며, 투자 결정·자본조달 결정·배당 결정의 세 가지 재무 의사결정이 이루어진다. NPV, IRR, 회수기간법이 주요 평가 기법이다.",
+      "조직구조 유형: 기능별 조직(전문성↑, 조정↓), 사업부제 조직(자율성↑, 자원중복↑), 매트릭스 조직(유연성↑, 지휘이원화). 상황에 맞는 구조 선택이 중요하다.",
+    ]
+  },
+  "공과대학": {
+    title:"알고리즘_핵심개념_정리.docx",
+    heading:"알고리즘 및 자료구조 핵심 정리",
+    body:[
+      "시간복잡도(Time Complexity)는 알고리즘 수행 시간을 입력 크기 n의 함수로 표현한 것이다. Big-O 표기법 기준: O(1) < O(log n) < O(n) < O(n log n) < O(n²) < O(2ⁿ).",
+      "정렬 알고리즘 비교: <b>버블정렬 O(n²)</b> / <b>병합정렬 O(n log n)</b> / <b>퀵정렬 평균 O(n log n), 최악 O(n²)</b> / <b>힙정렬 O(n log n)</b>. 안정 정렬 여부도 함께 확인할 것.",
+      "그래프 탐색: BFS(너비 우선 탐색)는 큐(Queue) 자료구조를 활용하며 최단 경로 탐색에 유리하다. DFS(깊이 우선 탐색)는 스택(Stack) 또는 재귀를 이용하며 사이클 탐지에 활용된다.",
+      "동적 프로그래밍(DP): 최적 부분 구조와 중복 부분 문제를 만족할 때 사용. 메모이제이션(하향식)과 타뷸레이션(상향식) 두 가지 구현 방식이 있다. 대표 문제: 피보나치, LCS, 배낭 문제.",
+      "운영체제 프로세스 스케줄링: FCFS(비선점), SJF(최소 작업 우선), Round Robin(선점·시간 할당량), Priority Scheduling. 문맥 교환(Context Switching) 비용을 최소화하는 것이 목표다.",
+    ]
+  },
+  "사회과학대학": {
+    title:"심리학개론_강의노트.docx",
+    heading:"심리학개론 강의 요약 노트",
+    body:[
+      "심리학의 주요 연구 방법: 실험법(인과관계 규명), 상관연구(관계의 방향·강도), 사례연구(심층 분석), 설문조사(대규모 자료 수집). 각 방법의 장단점과 한계를 파악해야 한다.",
+      "발달심리학 핵심 이론: 피아제(인지발달 4단계), 비고츠키(근접발달영역, 비계설정), 에릭슨(심리사회 발달 8단계), 볼비(애착이론). 각 이론의 핵심 개념 암기 필수.",
+      "성격 이론: 프로이트의 정신분석(id·ego·superego), 아들러의 개인심리학(열등감·우월 추구), 매슬로우의 욕구위계론(생리→안전→소속→존중→자아실현), 빅파이브 성격 모델(OCEAN).",
+      "사회심리학 주요 개념: 동조(Conformity, 애쉬 실험), 복종(Obedience, 밀그램 실험), 방관자 효과(Bystander Effect), 인지부조화(Cognitive Dissonance), 귀인 오류(FAE).",
+      "이상심리학: DSM-5 진단 체계 기준. 주요 장애 유형—불안장애, 기분장애(우울·양극성), 조현병 스펙트럼, 성격장애. 생물-심리-사회 통합 모델로 이해하는 것이 중요하다.",
+    ]
+  },
+  "인문과학대학": {
+    title:"철학의이해_핵심개념.docx",
+    heading:"철학의 이해 핵심 개념 정리",
+    body:[
+      "서양 고대 철학의 출발은 탈레스의 '만물의 근원은 물'이라는 자연철학적 질문에서 시작된다. 소크라테스는 '무지의 지'를 강조하며 대화법을 통해 진리를 탐구하였다.",
+      "플라톤의 이데아론: 감각 세계는 불완전한 그림자이며, 이데아(Idea)만이 참된 실재다. 국가론에서 철인(哲人) 통치를 주장하였고, 동굴의 비유로 인식의 단계를 설명하였다.",
+      "아리스토텔레스의 실체론: 형상(Form)과 질료(Matter)의 결합으로 사물을 설명. 목적론적 세계관, 중용(中庸)의 덕 윤리학, 정치학에서 인간을 '정치적 동물'로 정의하였다.",
+      "근대 철학의 전환: 데카르트 '나는 생각한다, 고로 나는 존재한다(Cogito ergo sum)'. 경험론(로크·흄)과 합리론(데카르트·스피노자·라이프니츠)의 대립, 칸트의 비판철학으로 종합.",
+      "현대 철학: 실존주의(사르트르 '실존은 본질에 앞선다'), 분석철학(비트겐슈타인 언어게임), 현상학(후설·하이데거), 포스트모더니즘(푸코·데리다의 해체주의).",
+    ]
+  },
+  "자연과학대학": {
+    title:"일반생물학_정리노트.docx",
+    heading:"일반생물학 중간 정리",
+    body:[
+      "세포의 기본 구조: 원핵세포(막으로 싸인 핵 없음, 세균·고세균)와 진핵세포(핵막 존재, 동·식물·균류). 세포소기관: 미토콘드리아(에너지 생산), 리보솜(단백질 합성), 소포체, 골지체.",
+      "DNA 복제(Replication): 반보존적 복제 방식. DNA 중합효소(DNA Polymerase)가 5'→3' 방향으로 합성. 선도 가닥(Leading strand)과 지연 가닥(Lagging strand, 오카자키 절편 형성).",
+      "광합성과 세포호흡: 광합성(6CO₂+6H₂O→C₆H₁₂O₆+6O₂), 명반응(틸라코이드)과 캘빈 회로(스트로마). 세포호흡: 해당과정→피루브산 산화→TCA회로→산화적 인산화, 최대 36~38 ATP 생성.",
+      "멘델의 유전 법칙: 분리의 법칙(대립유전자는 배우자 형성 시 분리), 독립의 법칙(다른 염색체 상의 유전자는 독립적 분리). 우성·열성, 불완전 우성, 공동 우성 개념 구분 필요.",
+      "진화 메커니즘: 자연선택(Natural Selection), 유전적 부동(Genetic Drift), 유전자 흐름(Gene Flow), 돌연변이. 하디-바인베르크 평형 조건: 무작위 교배, 대집단, 자연선택·돌연변이·이주 없음.",
+    ]
+  },
+  "default": {
+    title:"강의노트_정리.docx",
+    heading:"강의 핵심 내용 정리",
+    body:[
+      "오늘 수업의 핵심 개념을 체계적으로 정리하였다. 강의에서 제시된 이론적 배경과 실제 사례를 연결하여 이해하는 것이 중요하다. 관련 참고문헌을 함께 검토할 것을 권장한다.",
+      "주요 개념 1: 이론의 기본 전제와 적용 범위를 명확히 이해해야 한다. 특히 예외적 상황과 한계에 대한 비판적 시각을 갖추는 것이 학문적 역량 향상에 도움이 된다.",
+      "주요 개념 2: 선행 연구 검토를 통해 현재 학계의 주류적 관점과 대안적 관점을 비교·분석하였다. 다양한 접근법의 장단점을 이해하고 상황에 맞는 적용이 필요하다.",
+      "주요 개념 3: 실증적 연구 방법론의 선택은 연구 목적과 연구 문제의 성격에 따라 결정된다. 양적 연구와 질적 연구의 특성을 파악하고 혼합 연구 방법의 가능성도 고려한다.",
+      "다음 주 발표 준비: 각자 맡은 주제에 대해 15분 분량의 PPT를 제작할 것. 참고문헌은 최소 5편 이상(학술지 논문 위주). 발표 후 Q&A 10분 진행 예정.",
+    ]
+  }
+};
+
+function getCoverData(){
+  var content = COVER_CONTENT[myCollege] || COVER_CONTENT["default"];
+  // 수업명이 있으면 제목에 반영
+  if(myClass){
+    content = JSON.parse(JSON.stringify(content)); // 복사
+    content.title = myClass.replace(/\s/g,"_") + "_강의노트.docx";
+    content.heading = myClass + " 강의 핵심 정리";
+  }
+  return content;
+}
+
+function updateCover(){
+  var data = getCoverData();
+  var titleEl = document.getElementById("coverTitle");
+  var contentEl = document.getElementById("coverContent");
+  if(titleEl) titleEl.textContent = data.title + " - Word";
+  if(contentEl){
+    contentEl.innerHTML = "<h2>" + data.heading + "</h2>" +
+      data.body.map(function(p){
+        return "<p>" + p + "</p>";
+      }).join("");
+  }
+}
+
+// ═══ 키보드 커버 ═══
+var coverOn=false;
+var tooltipShown=false;
+
+function showCoverTooltip(){
+  if(tooltipShown)return;
+  tooltipShown=true;
+  var tt=document.getElementById("coverTooltip");
+  if(!tt)return;
+  tt.style.display="block";
+  // 4초 후 자동으로 사라짐
+  setTimeout(function(){ tt.style.display="none"; }, 4000);
+}
+
+function toggleCover(){
+  coverOn=!coverOn;
+  var cover=document.getElementById("keyboardCover");
+  if(!cover)return;
+  if(coverOn){
+    updateCover(); // 수업명/단과대에 맞는 내용으로 업데이트
+    cover.style.display="block";
+  } else {
+    cover.style.display="none";
+    var inp=document.getElementById("typeInput");
+    if(inp)inp.focus();
+  }
+}
+
+// ESC 키 전역 리스너
+document.addEventListener("keydown",function(e){
+  if(e.key==="Escape"){
+    // 배틀 화면일 때만 작동
+    var battle=document.getElementById("phaseBattle");
+    if(battle && battle.classList.contains("active")){
+      e.preventDefault();
+      toggleCover();
+    }
+  }
+});
+
+// ═══ 별 / 스카이라인 ═══
 function initStars(){
   var canvas=document.getElementById("starCanvas");if(!canvas)return;
   var ctx=canvas.getContext("2d"),stars=[];
   function resize(){canvas.width=window.innerWidth;canvas.height=window.innerHeight;stars=Array.from({length:80},function(){return{x:Math.random()*canvas.width,y:Math.random()*canvas.height*.65,r:Math.random()<.2?2:1,alpha:Math.random(),speed:.003+Math.random()*.008,phase:Math.random()*Math.PI*2};});}
   window.addEventListener("resize",resize);resize();
-  var frame=0;
-  (function draw(){ctx.clearRect(0,0,canvas.width,canvas.height);frame++;stars.forEach(function(s){s.alpha=.3+.5*Math.sin(frame*s.speed+s.phase);ctx.globalAlpha=s.alpha;ctx.fillStyle="#fff";ctx.fillRect(s.x,s.y,s.r,s.r);});ctx.globalAlpha=1;requestAnimationFrame(draw);})();
+  var frame=0;(function draw(){ctx.clearRect(0,0,canvas.width,canvas.height);frame++;stars.forEach(function(s){s.alpha=.3+.5*Math.sin(frame*s.speed+s.phase);ctx.globalAlpha=s.alpha;ctx.fillStyle="#fff";ctx.fillRect(s.x,s.y,s.r,s.r);});ctx.globalAlpha=1;requestAnimationFrame(draw);})();
 }
 function initSkyline(){
   var sky=document.getElementById("skyline");if(!sky)return;
@@ -728,30 +1352,15 @@ function initSkyline(){
   });
 }
 
-// ── 시작 (DOMContentLoaded 의존성 제거 및 즉시 실행 보장) ──────────────
-function initApp() {
-  initStars(); 
-  initSkyline(); 
-  initAvatars(); 
-  initFirebase(); 
-  updatePreview(); 
-  pickPrompt(); 
-  loadLobbyRank();
-  
-  var clsSelect = document.getElementById("classSelect");
-  var nickInput = document.getElementById("nicknameInput");
-  if(clsSelect) clsSelect.addEventListener("change",updatePreview);
-  if(nickInput) nickInput.addEventListener("input",updatePreview);
-}
-
-// 페이지가 어느 환경(웹 에디터, 캔버스 등)에서 렌더링 되더라도 
-// 스크립트가 무조건 확실하게 실행되도록 즉시 실행합니다.
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initApp);
-} else {
-  initApp();
-}
-
+// ═══ 시작 ═══
+window.addEventListener("DOMContentLoaded",function(){
+  initStars(); initSkyline(); initFirebase();
+  initCharGrid(); updatePreview(); pickPrompt(); loadLobbyRank();
+  document.getElementById("schoolSelect").addEventListener("change", onSchoolChange);
+  document.getElementById("collegeSelect").addEventListener("change", onCollegeChange);
+  document.getElementById("classSelect").addEventListener("change", updatePreview);
+  document.getElementById("nicknameInput").addEventListener("input",updatePreview);
+});
 </script>
 </body>
 </html>
